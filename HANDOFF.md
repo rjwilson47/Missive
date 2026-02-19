@@ -4,21 +4,25 @@
 
 ## 🎯 Next Session Starts Here
 <!-- Claude overwrites this section at the end of every session -->
-> **Session 5 is complete.** Begin Session 6:
+> **Session 6 is complete. The MVP is fully implemented.**
 >
-> 1. **Implement `src/app/app/settings/page.tsx`** — full settings UI: username change, region/timezone edit, discoverability toggles, pen pal opt-in + match preference, UserIdentifier management (add/remove email/phone/address), delete account (30-day grace) + cancel deletion
-> 2. **Implement `src/app/api/auth/settings` routes** (if needed) or wire settings through `PUT /api/me`:
->    - PUT /api/me — update username, region, timezone, discoverability flags, pen pal settings
->    - POST /api/me/identifiers — add a UserIdentifier (email/phone/address)
->    - DELETE /api/me/identifiers/:id — remove a UserIdentifier
->    - POST /api/me/delete — mark account for deletion (set markedForDeletionAt)
->    - POST /api/me/cancel-delete — cancel pending deletion (clear markedForDeletionAt)
-> 3. **Update `src/app/page.tsx`** (landing page) — full landing page with marketing copy, sign up / log in CTAs, app description
-> 4. **Implement `src/app/safety/page.tsx`** — static safety page explaining blocking/reporting (may already be stubbed)
-> 5. **Implement `src/app/api/me/route.ts`** GET (already done), add PUT handler for profile updates
-> 6. **Generate `README.md`** — comprehensive README per SPEC §15 structure
+> All 6 sessions of the Missive build plan are done. The codebase is production-ready for an MVP launch. See `README.md` for deployment instructions.
 >
-> Do NOT implement anything beyond this list.
+> **If continuing work, suggested post-MVP improvements (from README §11):**
+> 1. Vercel + Supabase production environment setup
+> 2. Add recovery email UI + Supabase password reset integration
+> 3. Content moderation hook in `src/lib/upload.ts` (currently a stub)
+> 4. Voice letter implementation (TipTap WriteStep + audio storage + LetterView rendering)
+> 5. Prisma migrate workflow (switch from `db push` to tracked migrations)
+> 6. Mobile/PWA enhancements (manifest.json, swipe gestures in ImageCarousel)
+> 7. Admin UI for Report review (basic list view of flagged letters)
+>
+> **What is NOT implemented (intentional MVP scope):**
+> - Admin UI for moderation
+> - Recovery email UI (field exists in DB but not exposed in Settings)
+> - Content moderation scanning (stub in upload.ts)
+> - Voice letters (ContentType enum prepared, UI shows "coming soon")
+> - Account purge cron job (markedForDeletionAt is set, but no job deletes after 30 days)
 
 ---
 ## 📌 Build Order
@@ -31,7 +35,7 @@
 - [x] Session 3: Editor component + compose flow + drafts + api/upload.ts
 - [x] Session 4: Mailbox UI pages + tear-open + reply + image carousel
 - [x] Session 5: Pen pal + folders + block/report + rate limiting
-- [ ] Session 6: Settings + account deletion + landing page + README.md
+- [x] Session 6: Settings + account deletion + landing page + README.md
 
 ---
 
@@ -159,12 +163,24 @@
 - `src/app/api/letters/[id]/report/route.ts` — **FULLY IMPLEMENTED**: DELIVERED+recipient check; optional reason (max 1000 chars); inserts Report record; returns 201
 - `src/app/api/letters/[id]/move/route.ts` — **FULLY IMPLEMENTED**: DELIVERED+opened (opened_at not null) check; verifies target folder ownership; rejects UNOPENED/DRAFTS as targets; upserts LetterFolder
 
+### Session 6 — Completed
+
+- `src/app/api/me/route.ts` PUT — **FULLY IMPLEMENTED**: partial/patch profile update; validates username (guard: blocked during deletion grace period), region, timezone (IANA), boolean discoverability flags, penPalMatchPreference; handles P2002 for username conflicts; returns updated AppUser
+- `src/app/api/me/identifiers/route.ts` — **FULLY IMPLEMENTED**: GET lists all UserIdentifiers; POST adds new identifier (EMAIL/PHONE/ADDRESS); normalises value by type; blocked during deletion grace period; handles P2002 (already in use globally); returns 201 + UserIdentifierShape
+- `src/app/api/me/identifiers/[id]/route.ts` — **FULLY IMPLEMENTED**: DELETE verifies ownership (userId scope) then removes identifier; returns 404 if not found or not owned
+- `src/app/api/me/delete/route.ts` — **FULLY IMPLEMENTED**: POST sets markedForDeletionAt = now; idempotent (no-op if already marked); returns { success: true, markedForDeletionAt }
+- `src/app/api/me/cancel-delete/route.ts` — **FULLY IMPLEMENTED**: POST clears markedForDeletionAt; idempotent (no-op if not currently marked); restores full account access
+- `src/app/app/settings/page.tsx` — **FULLY IMPLEMENTED**: Profile section (username/region/timezone with TimezoneSelect, explicit save); Discoverability toggles (auto-save); Pen Pal toggle + match preference (auto-save); Routing Identifiers list + add + remove; Account deletion (30-day grace) + cancel; deletion banner when in grace period
+- `src/app/page.tsx` — **FULLY IMPLEMENTED**: full landing page with hero section, "The idea" copy, "How it works" feature grid, ground rules list, footer with nav links
+- `src/app/safety/page.tsx` — **FULLY IMPLEMENTED**: Blocking, Reporting, Privacy, Account deletion sections; detailed bullet-point explanations; public accessible; link back to home
+- `README.md` — **FULLY IMPLEMENTED**: Project overview; architecture summary + stack table; full file structure guide with key logic locations; local dev setup with env var table; database & Prisma guide; storage setup; Vercel deployment; cron jobs; test matrix; manual QA checklist; troubleshooting guide; 8-item next steps checklist
+
 ---
 
 ## 🔄 In Progress
 <!-- Claude updates this BEFORE starting each file.
      Clear it when the file moves to Completed. -->
-(none — Session 5 complete)
+(none — Session 6 complete. MVP is fully implemented.)
 
 ---
 
@@ -406,3 +422,27 @@
 - Settings page, account deletion endpoints, landing page update, README (Session 6)
 
 **Next:** Session 6 — settings page + PUT /api/me + identifiers CRUD + delete/cancel-delete + landing page + README
+
+### Session 6
+**Status:** Complete ✅ — **MVP COMPLETE**
+
+**What was done:**
+- `src/app/api/me/route.ts` PUT — partial/patch profile update; validates username (deletion grace guard), region, timezone (IANA), booleans, penPalMatchPreference; P2002 handling; returns updated AppUser
+- `src/app/api/me/identifiers/route.ts` — GET list + POST add (EMAIL/PHONE/ADDRESS); normalises by type; deletion grace guard; P2002 handling; returns 201
+- `src/app/api/me/identifiers/[id]/route.ts` — DELETE verifies ownership; returns 404 if not owned
+- `src/app/api/me/delete/route.ts` — POST sets markedForDeletionAt = now; idempotent
+- `src/app/api/me/cancel-delete/route.ts` — POST clears markedForDeletionAt; idempotent
+- `src/app/app/settings/page.tsx` — full settings UI: Profile (username/region/timezone); Discoverability toggles (auto-save); Pen Pal toggle + match preference; Identifiers list/add/remove; Account delete/cancel; deletion grace banner
+- `src/app/page.tsx` — full landing page: hero, "the idea" copy, feature grid, ground rules, footer
+- `src/app/safety/page.tsx` — full safety page: Blocking, Reporting, Privacy, Account deletion sections
+- `README.md` — comprehensive README with architecture, file guide, dev setup, deployment, cron docs, QA checklist, troubleshooting, next steps
+- `src/types/index.ts` — added UserIdentifierShape type
+
+**What was NOT done (intentional MVP scope):**
+- Admin UI for report moderation
+- Recovery email Settings UI + Supabase password reset
+- Content moderation scanning (upload stub only)
+- Voice letter implementation (ContentType enum prepared, UI shows "coming soon")
+- Account purge cron job (30-day deletion is marked but not executed)
+
+**Next:** MVP is complete. See README.md §11 for post-MVP improvements.

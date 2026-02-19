@@ -115,6 +115,16 @@ export interface FolderShape {
   letterCount?: number;
 }
 
+// ===== UserIdentifiers =====
+
+/** Shape for a user identifier returned by GET /api/me/identifiers */
+export interface UserIdentifierShape {
+  id: string;
+  type: IdentifierType;
+  valueNormalized: string;
+  createdAt: string;
+}
+
 // ===== API helpers =====
 
 /** Generic API error response */
