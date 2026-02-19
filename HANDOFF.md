@@ -4,18 +4,17 @@
 
 ## 🎯 Next Session Starts Here
 <!-- Claude overwrites this section at the end of every session -->
-> **Session 3 is complete.** Begin Session 4:
+> **Session 4 is complete.** Begin Session 5:
 >
-> 1. **Implement `src/app/app/layout.tsx`** — auth guard (redirect to /login if no token) + Sidebar component
-> 2. **Implement `src/app/api/letters/[id]/route.ts` GET** — fetch letter detail (draft owner or recipient), generate signed URLs for all images
-> 3. **Implement `src/app/app/letter/[id]/page.tsx`** — letter detail view: render LetterView for DELIVERED letters (tear-open prompt), draft preview for DRAFT; fetch via GET /api/letters/:id
-> 4. **Implement `src/app/api/letters/[id]/tear-open/route.ts`** — POST: mark letter OPENED (set opened_at), move from UNOPENED to OPENED folder
-> 5. **Implement `src/app/api/letters/[id]/reply/route.ts`** — POST: create reply DRAFT with inReplyToId set
-> 6. **Implement `src/app/app/unopened/page.tsx`** — list UNOPENED letters (EnvelopeCard), click → /app/letter/:id
-> 7. **Implement `src/app/app/opened/page.tsx`** — list OPENED letters (EnvelopeCard)
-> 8. **Implement `src/components/mailbox/EnvelopeCard.tsx`** — letter card: sender, date, contentType icon
-> 9. **Implement `src/components/letter/LetterView.tsx`** — render typed letter (TipTap read-only) or image carousel (handwritten)
-> 10. **Implement `src/components/letter/ImageCarousel.tsx`** + **`ImageLightbox.tsx`** — horizontal scroll + full-size Radix dialog
+> 1. **Implement `src/app/api/lookup/route.ts`** — full anti-enumeration lookup (email/phone/address routing attempt; always returns generic response; rate-limit 10/hr per IP)
+> 2. **Implement `src/app/api/pen-pal-match/route.ts`** — POST: find match (timezone ±3h, region pref, exclude MatchHistory); create MatchHistory record; create pre-addressed DRAFT; return { draftLetterId }
+> 3. **Implement `src/app/api/folders/route.ts`** GET/POST — GET: list user's folders (system + custom); POST: create custom folder (max 30, max name 30 chars, case-insensitive unique per user)
+> 4. **Implement `src/app/api/folders/[id]/route.ts`** DELETE — move all letters in folder to OPENED system folder (transaction); delete folder
+> 5. **Implement `src/app/app/folder/[id]/page.tsx`** — custom folder view: fetch GET /api/letters?folder={id}, render MailboxList
+> 6. **Implement `src/app/api/letters/[id]/block-sender/route.ts`** — POST: add BlockList entry (blockerUserId = me, blockedUserId = original sender)
+> 7. **Implement `src/app/api/letters/[id]/report/route.ts`** — POST: create Report record
+> 8. **Implement `src/app/api/letters/[id]/move/route.ts`** — POST: move OPENED letter to specified folder (update LetterFolder record)
+> 9. **Wire rate limiting** in `src/lib/ratelimit.ts` into lookup, pen-pal-match endpoints (already wired in send+auth)
 >
 > Do NOT implement anything beyond this list.
 
@@ -28,7 +27,7 @@
 - [x] Session 1: Skeleton + prisma/schema.prisma + auth files + api/me
 - [x] Session 2: lib/delivery.ts + api/cron/deliver.ts + delivery tests
 - [x] Session 3: Editor component + compose flow + drafts + api/upload.ts
-- [ ] Session 4: Mailbox UI pages + tear-open + reply + image carousel
+- [x] Session 4: Mailbox UI pages + tear-open + reply + image carousel
 - [ ] Session 5: Pen pal + folders + block/report + rate limiting
 - [ ] Session 6: Settings + account deletion + landing page + README.md
 
@@ -130,12 +129,29 @@
 - `src/components/compose/WriteStep.tsx` — **FULLY IMPLEMENTED**: TYPED renders TypedWriter (LetterEditor + font selector + autosave debounced 2.5s via PUT /api/letters/:id); HANDWRITTEN renders HandwrittenUploader (file input, POST /api/upload per image, ordered list, remove buttons, 10-slot limit)
 - `src/components/compose/ReviewStep.tsx` — **FULLY IMPLEMENTED**: delivery estimate display (formatted ISO or generic "1–5 business days"), "Seal envelope & send" → POST /api/letters/:id/send, success state + 1.5s redirect to /app/unopened, error handling
 
+### Session 4 — Completed
+
+- `src/app/app/layout.tsx` — **FULLY IMPLEMENTED**: server component wrapping AppShell client component; exports metadata
+- `src/components/layout/AppShell.tsx` — **FULLY IMPLEMENTED**: reads localStorage("missive_token"), calls GET /api/me to verify JWT, redirects to /login on invalid/missing token, fetches custom folders for Sidebar, renders Sidebar + main panel
+- `src/components/layout/Sidebar.tsx` — **FULLY IMPLEMENTED**: usePathname active state, custom folders list, "Write a letter" CTA, Settings link
+- `src/app/api/letters/[id]/route.ts` GET — **FULLY IMPLEMENTED**: DRAFT sender OR DELIVERED recipient access; generates signed URLs for all images; returns LetterDetail JSON
+- `src/app/app/letter/[id]/page.tsx` — **FULLY IMPLEMENTED**: client page; fetches GET /api/letters/:id; DRAFT shows preview; DELIVERED+unopened shows sealed envelope + tear-open button; DELIVERED+opened shows LetterView + Reply button; error/loading states
+- `src/app/api/letters/[id]/tear-open/route.ts` — **FULLY IMPLEMENTED**: JWT auth → DELIVERED+recipient check → idempotent opened_at set → LetterFolder upsert to OPENED system folder in atomic transaction
+- `src/app/api/letters/[id]/reply/route.ts` — **FULLY IMPLEMENTED**: JWT auth → deletion guard → DELIVERED+recipient check → creates DRAFT pre-addressed to original sender (in_reply_to set); returns { draftLetterId }
+- `src/app/app/unopened/page.tsx` — **FULLY IMPLEMENTED**: client page, fetches GET /api/letters?folder=UNOPENED, renders MailboxList, loading/error states
+- `src/app/app/opened/page.tsx` — **FULLY IMPLEMENTED**: client page, fetches GET /api/letters?folder=OPENED, renders MailboxList, loading/error states
+- `src/components/mailbox/EnvelopeCard.tsx` — **FULLY IMPLEMENTED**: sender name, postmark + region, status line (In transit/Arrives/Delivered/Opened), red dot badge for unopened, keyboard accessible (Enter/Space), router.push to /app/letter/:id
+- `src/components/mailbox/MailboxList.tsx` — **UPDATED**: added optional emptyMessage prop, role="list" wrapper
+- `src/components/letter/LetterView.tsx` — **FULLY IMPLEMENTED**: TYPED → readOnly LetterEditor + image attachments below; HANDWRITTEN → ImageCarousel; VOICE → coming soon placeholder
+- `src/components/letter/ImageCarousel.tsx` — **FULLY IMPLEMENTED**: Prev/Next arrows, counter "1/5", click to open lightbox, keyboard arrow keys, single-image "click to enlarge" hint
+- `src/components/letter/ImageLightbox.tsx` — **FULLY IMPLEMENTED**: Radix Dialog, full-res image via signedUrl, close button + Escape + overlay click, accessible (sr-only title)
+
 ---
 
 ## 🔄 In Progress
 <!-- Claude updates this BEFORE starting each file.
      Clear it when the file moves to Completed. -->
-(none — Session 3 complete)
+(none — Session 4 complete)
 
 ---
 
@@ -147,8 +163,7 @@
 - Partial index for `Letter.status = 'IN_TRANSIT'` must be created manually via SQL after `prisma db push` (documented in schema comments)
 - `src/app/api/cron/deliver/route.ts` — re-routing uses `sentAt > cutoff` but sentAt is not fetched in scope for `computeScheduledDelivery`; uses `now` as approximation (acceptable given 3-day window)
 - `src/app/app/compose/page.tsx` — `isPenPalEligible` is always `true` (simplified); a real check would call GET /api/me and check `availableForPenPalMatching` (Session 5)
-- `src/components/compose/WriteStep.tsx` — HandwrittenUploader's "Remove" button only removes from local state, not from Supabase Storage or the DB LetterImage row (acceptable for MVP; real delete needs a DELETE /api/upload/:id endpoint in Session 4+)
-- `src/app/api/letters/[id]/route.ts` — GET still stub (Session 4, needs signed URL generation)
+- `src/components/compose/WriteStep.tsx` — HandwrittenUploader's "Remove" button only removes from local state, not from Supabase Storage or the DB LetterImage row (acceptable for MVP; real delete needs a DELETE /api/upload/:id endpoint)
 
 ---
 
@@ -332,3 +347,30 @@
 - App layout sidebar + auth guard still stub (Session 4)
 
 **Next:** Session 4 — Mailbox UI (unopened/opened/folder views) + letter detail (GET /api/letters/:id with signed URLs) + tear-open + reply flow + app layout auth guard + sidebar
+
+### Session 4
+**Status:** Complete ✅
+
+**What was done:**
+- `src/app/app/layout.tsx` — server component wrapping `AppShell` client; exports metadata
+- `src/components/layout/AppShell.tsx` — NEW: client auth guard; reads localStorage("missive_token"); calls GET /api/me; redirects to /login if missing/invalid; fetches custom folders for Sidebar
+- `src/components/layout/Sidebar.tsx` — updated: usePathname active state, "Write a letter" CTA, custom folder list, Settings link
+- `src/app/api/letters/[id]/route.ts` GET — implemented: DRAFT sender OR DELIVERED recipient auth; signed URL generation for all images; returns full LetterDetail
+- `src/app/app/letter/[id]/page.tsx` — client page; DRAFT shows read-only preview; DELIVERED+unopened shows sealed envelope UI + tear-open button; DELIVERED+opened shows LetterView + Reply button
+- `src/app/api/letters/[id]/tear-open/route.ts` — implemented: idempotent opened_at set + atomic LetterFolder upsert to OPENED system folder
+- `src/app/api/letters/[id]/reply/route.ts` — implemented: creates DRAFT pre-addressed to original sender; in_reply_to set; deletion guard
+- `src/app/app/unopened/page.tsx` — fully implemented: client page, fetches UNOPENED letters, MailboxList
+- `src/app/app/opened/page.tsx` — fully implemented: client page, fetches OPENED letters, MailboxList
+- `src/components/mailbox/EnvelopeCard.tsx` — fully implemented: sender, postmark+region, status line, red dot badge, keyboard accessible
+- `src/components/mailbox/MailboxList.tsx` — updated: emptyMessage prop, role="list"
+- `src/components/letter/LetterView.tsx` — fully implemented: TYPED→readOnly LetterEditor; HANDWRITTEN→ImageCarousel; VOICE→coming soon
+- `src/components/letter/ImageCarousel.tsx` — fully implemented: Prev/Next arrows, counter, click→lightbox, keyboard nav
+- `src/components/letter/ImageLightbox.tsx` — fully implemented: Radix Dialog, full-res image, close on Escape/overlay/button
+
+**What was NOT done (by design):**
+- Custom folder view page (`/app/folder/[id]`) — Session 5
+- Block/report/move letter APIs — Session 5
+- Pen pal match API (full implementation) — Session 5
+- Rate limiting for lookup and pen-pal endpoints — Session 5
+
+**Next:** Session 5 — lookup API + pen-pal match + folders CRUD + block/report/move + rate limiting wiring

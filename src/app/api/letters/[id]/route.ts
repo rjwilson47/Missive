@@ -8,13 +8,18 @@
  *   GET: session user must be the senderId (for DRAFT) or recipientUserId (for DELIVERED)
  *   PUT/DELETE: session user must be senderId AND status must be DRAFT
  *
- * TODO (Session 4): Implement GET with signed URL generation.
+ * Signed URL rules (SPEC §9):
+ *   - DRAFT sender: signed URLs generated (they uploaded these images)
+ *   - DELIVERED recipient: signed URLs generated (they are the authorised viewer)
+ *   - Sender of a DELIVERED letter: no access (no sent folder; letter is gone)
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import { getUserFromHeader } from "@/lib/supabase";
 import { getAppUser } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { getSignedUrl } from "@/lib/upload";
+import type { LetterDetail, LetterImageShape } from "@/types";
 
 const UNAUTHORIZED = NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -28,12 +33,112 @@ const VALID_ADDRESSING_TYPES = [
 
 // ===== GET =====
 
+/**
+ * Fetches a full letter detail for the authorised owner or recipient.
+ *
+ * Access control:
+ *   - DRAFT:     only the sender (senderId = me) may view
+ *   - DELIVERED: only the recipient (recipientUserId = me) may view
+ *   - Any other status or ownership mismatch → 404 (avoids leaking existence)
+ *
+ * Signed URLs are generated for images when the caller is authorised.
+ * Images are returned in order_index order.
+ *
+ * @param req    - Incoming request (Authorization header required)
+ * @param params - Route params containing the letter UUID
+ * @returns LetterDetail JSON or error response
+ */
 export async function GET(
-  _req: NextRequest,
-  { params: _params }: { params: { id: string } }
+  req: NextRequest,
+  { params }: { params: { id: string } }
 ): Promise<NextResponse> {
-  // TODO (Session 4): fetch letter, verify auth, generate signed URLs for images
-  return NextResponse.json({ error: "Not implemented" }, { status: 501 });
+  // ── Auth ──────────────────────────────────────────────────────────────────
+  const supabaseUser = await getUserFromHeader(req.headers.get("authorization"));
+  if (!supabaseUser) return UNAUTHORIZED;
+
+  const me = await getAppUser(supabaseUser.id);
+  if (!me) return UNAUTHORIZED;
+
+  // ── Fetch letter with all related data ────────────────────────────────────
+  const letter = await prisma.letter.findUnique({
+    where: { id: params.id },
+    include: {
+      sender: { select: { username: true } },
+      images: { orderBy: { order_index: "asc" } },
+      folderEntry: { select: { folderId: true } },
+    },
+  });
+
+  if (!letter) {
+    return NextResponse.json({ error: "Letter not found." }, { status: 404 });
+  }
+
+  // ── Authorization ─────────────────────────────────────────────────────────
+  // DRAFT: only the sender may access (for preview/edit in compose flow)
+  // DELIVERED: only the recipient may access (for reading)
+  // Any other status (IN_TRANSIT, BLOCKED, UNDELIVERABLE): inaccessible to both parties
+  const isSenderViewingDraft =
+    letter.status === "DRAFT" && letter.senderId === me.id;
+  const isRecipientViewingDelivered =
+    letter.status === "DELIVERED" && letter.recipientUserId === me.id;
+
+  if (!isSenderViewingDraft && !isRecipientViewingDelivered) {
+    // Return 404 rather than 403 to avoid revealing that the letter exists
+    return NextResponse.json({ error: "Letter not found." }, { status: 404 });
+  }
+
+  // ── Generate signed URLs for images ───────────────────────────────────────
+  // Both the draft owner and the delivered recipient are authorised to view images.
+  const imagesWithUrls: LetterImageShape[] = await Promise.all(
+    letter.images.map(async (img) => {
+      let signedUrl: string | undefined;
+      let thumbnailSignedUrl: string | undefined;
+      try {
+        [signedUrl, thumbnailSignedUrl] = await Promise.all([
+          getSignedUrl(img.storage_path),
+          getSignedUrl(img.thumbnail_path),
+        ]);
+      } catch (err) {
+        // Log but don't fail the whole request — images may still load if URLs are cached
+        console.error(`[GET /api/letters/:id] Failed to sign URL for image ${img.id}:`, err);
+      }
+      return {
+        id: img.id,
+        storagePath: img.storage_path,
+        thumbnailPath: img.thumbnail_path,
+        mimeType: img.mimeType,
+        sizeBytes: img.size_bytes,
+        width: img.width,
+        height: img.height,
+        orderIndex: img.order_index,
+        signedUrl,
+        thumbnailSignedUrl,
+      };
+    })
+  );
+
+  // ── Build response ─────────────────────────────────────────────────────────
+  const detail: LetterDetail = {
+    id: letter.id,
+    senderId: letter.senderId,
+    senderUsername: letter.sender.username,
+    senderRegionAtSend: letter.sender_region_at_send ?? "",
+    senderTimezoneAtSend: letter.sender_timezone_at_send ?? "",
+    contentType: letter.contentType as LetterDetail["contentType"],
+    status: letter.status as LetterDetail["status"],
+    sentAt: letter.sent_at?.toISOString() ?? null,
+    scheduledDeliveryAt: letter.scheduled_delivery_at?.toISOString() ?? null,
+    deliveredAt: letter.delivered_at?.toISOString() ?? null,
+    openedAt: letter.opened_at?.toISOString() ?? null,
+    createdAt: letter.created_at.toISOString(),
+    typedBodyJson: (letter.typed_body_json as Record<string, unknown>) ?? null,
+    fontFamily: letter.font_family ?? null,
+    images: imagesWithUrls,
+    folderId: letter.folderEntry?.folderId ?? null,
+    inReplyToId: letter.in_reply_to ?? null,
+  };
+
+  return NextResponse.json(detail);
 }
 
 // ===== PUT =====
