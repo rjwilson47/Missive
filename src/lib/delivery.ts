@@ -51,40 +51,107 @@ function isBusinessDay(dt: DateTime): boolean {
 /**
  * Computes the scheduled delivery time for a letter.
  *
- * Business-hours algorithm (per SPEC.md §6):
- *   - Convert sentAt to receiver's local time.
- *   - Walk forward hour by hour; only count hours that land on Mon–Fri.
- *   - Stop when 24 business hours have been counted → that's `earliest`.
- *   - Find the next 4:00 PM on a business day on or after `earliest`.
+ * Two-phase algorithm (per SPEC.md §6):
  *
- * @param sentAtUTC    - When the letter was sent (UTC Date)
- * @param receiverTimezone - IANA timezone string (e.g. "Australia/Melbourne")
- * @returns DeliverySchedule with both UTC timestamps
+ * PHASE 1 — Earliest delivery (24 business hours):
+ *   Walk forward through time in the receiver's timezone, hour by hour,
+ *   counting only hours that fall on Mon–Fri. Stop after 24 counted hours.
+ *
+ *   Special case: if the letter is sent on a weekend, start counting from
+ *   the following Monday at the same local wall-clock time (not from
+ *   Sunday/Saturday midnight). This matches the SPEC equivalence rule:
+ *   "if sent on weekend, start counting from next business day same local time."
+ *
+ * PHASE 2 — Scheduled delivery (next 4:00 PM on a business day):
+ *   - If earliest is before or at 4:00 PM on a business day → same-day 4 PM.
+ *   - If earliest is after 4:00 PM, or earliest falls on a weekend →
+ *     advance to the next 4:00 PM on a business day (skipping weekends).
+ *
+ * All calculations use Luxon for DST correctness. `plus({ days: N })` on a
+ * named-timezone DateTime preserves wall-clock time (adjusting UTC offset
+ * for DST automatically). `plus({ hours: N })` adds elapsed clock time.
+ *
+ * @param sentAtUTC        - When the letter was sent (UTC JS Date)
+ * @param receiverTimezone - IANA timezone of the recipient (e.g. "Australia/Melbourne")
+ * @returns DeliverySchedule containing earliestDeliveryUtc and scheduledDeliveryUtc
+ *
+ * @throws Error if receiverTimezone is not a recognised IANA timezone
  *
  * @example
- * // Friday 5PM receiver local → earliest Monday 5PM → deliver Tuesday 4PM
+ * // Friday 5 PM receiver TZ → earliest Monday 5 PM → deliver Tuesday 4 PM
  * computeScheduledDelivery(fridayAt5pmUTC, "America/New_York");
- *
- * @throws Error if receiverTimezone is not a valid IANA timezone
- *
- * TODO (Session 2): Implement this function.
  */
 export function computeScheduledDelivery(
   sentAtUTC: Date,
   receiverTimezone: string
 ): DeliverySchedule {
-  // TODO (Session 2): Implement full business-hours algorithm.
-  // Critical test cases from SPEC:
-  //   Friday 5pm  → earliest Monday 5pm   → deliver Tuesday 4pm
-  //   Saturday    → earliest Tuesday (same local time) → Tuesday 4pm
-  //   Thursday 3pm → earliest Friday 3pm  → deliver Friday 4pm
-  //   Monday 3pm  → earliest Tuesday 3pm  → deliver Tuesday 4pm
-  // Stub: return same-day 4pm as placeholder — WRONG, replace in Session 2
-  const sentLocal = DateTime.fromJSDate(sentAtUTC, { zone: receiverTimezone });
-  const placeholder = sentLocal.set({ hour: DELIVERY_HOUR, minute: 0, second: 0, millisecond: 0 });
+  // ===== Validate timezone =====
+  if (!isValidIanaTimezone(receiverTimezone)) {
+    throw new Error(`Invalid IANA timezone: "${receiverTimezone}"`);
+  }
+
+  // ===== Phase 1: Compute earliest delivery (24 business hours) =====
+
+  // Convert sent time to the receiver's local timezone for all calculations.
+  let current = DateTime.fromJSDate(sentAtUTC, { zone: receiverTimezone });
+
+  // Weekend fast-forward: if sent on Sat or Sun, jump to Monday at the same
+  // local wall-clock time. Luxon's plus({ days: N }) on a named-timezone DateTime
+  // preserves local HH:MM, adjusting the UTC offset automatically for DST.
+  if (!isBusinessDay(current)) {
+    // Saturday (weekday=6) → +2 days → Monday
+    // Sunday  (weekday=7) → +1 day  → Monday
+    const daysToMonday = current.weekday === 6 ? 2 : 1;
+    current = current.plus({ days: daysToMonday });
+  }
+
+  // Walk hour by hour; count only hours falling on Mon–Fri.
+  // "plus({ hours: 1 })" adds 60 minutes of elapsed time (correct across DST).
+  let hoursCounted = 0;
+  while (hoursCounted < 24) {
+    if (isBusinessDay(current)) {
+      hoursCounted++;
+    }
+    current = current.plus({ hours: 1 });
+  }
+
+  // After the loop, `current` is one hour past the 24th counted hour —
+  // that is the earliest possible delivery moment in the receiver's TZ.
+  const earliestLocal = current;
+  const earliestDeliveryUtc = earliestLocal.toUTC().toJSDate();
+
+  // ===== Phase 2: Find next 4:00 PM on a business day (≥ earliest) =====
+
+  // Try 4 PM on the same calendar day as earliest.
+  const sameDayAt4pm = earliestLocal.set({
+    hour: DELIVERY_HOUR,
+    minute: 0,
+    second: 0,
+    millisecond: 0,
+  });
+
+  let scheduled: DateTime;
+
+  if (sameDayAt4pm >= earliestLocal) {
+    // Same-day 4 PM is on/after earliest → use it as the candidate.
+    scheduled = sameDayAt4pm;
+  } else {
+    // Earliest is past 4 PM (or exactly at 4 PM but with remaining ms) →
+    // schedule for the next calendar day's 4 PM.
+    scheduled = earliestLocal
+      .plus({ days: 1 })
+      .set({ hour: DELIVERY_HOUR, minute: 0, second: 0, millisecond: 0 });
+  }
+
+  // If the candidate 4 PM falls on a weekend, keep advancing day by day
+  // until we land on a business day (e.g. Sat 4 PM → Sun 4 PM → Mon 4 PM).
+  while (!isBusinessDay(scheduled)) {
+    scheduled = scheduled.plus({ days: 1 });
+  }
+
   return {
-    earliestDeliveryUtc: sentAtUTC,
-    scheduledDeliveryUtc: placeholder.toUTC().toJSDate(),
+    earliestDeliveryUtc,
+    scheduledDeliveryUtc: scheduled.toUTC().toJSDate(),
   };
 }
 
