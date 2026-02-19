@@ -4,17 +4,19 @@
 
 ## 🎯 Next Session Starts Here
 <!-- Claude overwrites this section at the end of every session -->
-> **Session 4 is complete.** Begin Session 5:
+> **Session 5 is complete.** Begin Session 6:
 >
-> 1. **Implement `src/app/api/lookup/route.ts`** — full anti-enumeration lookup (email/phone/address routing attempt; always returns generic response; rate-limit 10/hr per IP)
-> 2. **Implement `src/app/api/pen-pal-match/route.ts`** — POST: find match (timezone ±3h, region pref, exclude MatchHistory); create MatchHistory record; create pre-addressed DRAFT; return { draftLetterId }
-> 3. **Implement `src/app/api/folders/route.ts`** GET/POST — GET: list user's folders (system + custom); POST: create custom folder (max 30, max name 30 chars, case-insensitive unique per user)
-> 4. **Implement `src/app/api/folders/[id]/route.ts`** DELETE — move all letters in folder to OPENED system folder (transaction); delete folder
-> 5. **Implement `src/app/app/folder/[id]/page.tsx`** — custom folder view: fetch GET /api/letters?folder={id}, render MailboxList
-> 6. **Implement `src/app/api/letters/[id]/block-sender/route.ts`** — POST: add BlockList entry (blockerUserId = me, blockedUserId = original sender)
-> 7. **Implement `src/app/api/letters/[id]/report/route.ts`** — POST: create Report record
-> 8. **Implement `src/app/api/letters/[id]/move/route.ts`** — POST: move OPENED letter to specified folder (update LetterFolder record)
-> 9. **Wire rate limiting** in `src/lib/ratelimit.ts` into lookup, pen-pal-match endpoints (already wired in send+auth)
+> 1. **Implement `src/app/app/settings/page.tsx`** — full settings UI: username change, region/timezone edit, discoverability toggles, pen pal opt-in + match preference, UserIdentifier management (add/remove email/phone/address), delete account (30-day grace) + cancel deletion
+> 2. **Implement `src/app/api/auth/settings` routes** (if needed) or wire settings through `PUT /api/me`:
+>    - PUT /api/me — update username, region, timezone, discoverability flags, pen pal settings
+>    - POST /api/me/identifiers — add a UserIdentifier (email/phone/address)
+>    - DELETE /api/me/identifiers/:id — remove a UserIdentifier
+>    - POST /api/me/delete — mark account for deletion (set markedForDeletionAt)
+>    - POST /api/me/cancel-delete — cancel pending deletion (clear markedForDeletionAt)
+> 3. **Update `src/app/page.tsx`** (landing page) — full landing page with marketing copy, sign up / log in CTAs, app description
+> 4. **Implement `src/app/safety/page.tsx`** — static safety page explaining blocking/reporting (may already be stubbed)
+> 5. **Implement `src/app/api/me/route.ts`** GET (already done), add PUT handler for profile updates
+> 6. **Generate `README.md`** — comprehensive README per SPEC §15 structure
 >
 > Do NOT implement anything beyond this list.
 
@@ -28,7 +30,7 @@
 - [x] Session 2: lib/delivery.ts + api/cron/deliver.ts + delivery tests
 - [x] Session 3: Editor component + compose flow + drafts + api/upload.ts
 - [x] Session 4: Mailbox UI pages + tear-open + reply + image carousel
-- [ ] Session 5: Pen pal + folders + block/report + rate limiting
+- [x] Session 5: Pen pal + folders + block/report + rate limiting
 - [ ] Session 6: Settings + account deletion + landing page + README.md
 
 ---
@@ -146,12 +148,23 @@
 - `src/components/letter/ImageCarousel.tsx` — **FULLY IMPLEMENTED**: Prev/Next arrows, counter "1/5", click to open lightbox, keyboard arrow keys, single-image "click to enlarge" hint
 - `src/components/letter/ImageLightbox.tsx` — **FULLY IMPLEMENTED**: Radix Dialog, full-res image via signedUrl, close button + Escape + overlay click, accessible (sr-only title)
 
+### Session 5 — Completed
+
+- `src/app/api/lookup/route.ts` — **FULLY IMPLEMENTED**: anti-enumeration lookup; always returns same generic message regardless of existence; rate-limited via `identifierLookupLimiter` (10/hr per IP, fail-open); normalises identifier by type before DB query
+- `src/app/api/pen-pal-match/route.ts` — **FULLY IMPLEMENTED**: full matching algorithm: auth → deletion guard → opt-in check → rate limit (sendLimiter, fail-open) → load MatchHistory → collect eligible candidates → timezone ±3h filter (Luxon DST-aware) → SAME_REGION filter if set → random pick → atomic transaction (MatchHistory create + DRAFT create with in_reply_to=null)
+- `src/app/api/folders/route.ts` — **FULLY IMPLEMENTED**: GET lists all folders with letter counts, system folders sorted first (UNOPENED→OPENED→DRAFTS), then custom alphabetically; POST creates custom folder (name ≤30 chars, ≤30 custom folders max, case-insensitive uniqueness enforced in application code)
+- `src/app/api/folders/[id]/route.ts` — **FULLY IMPLEMENTED**: DELETE verifies ownership + rejects system folders + atomically moves letters to OPENED folder + deletes folder; returns `{ success: true, movedLetterCount }`
+- `src/app/app/folder/[id]/page.tsx` — **FULLY IMPLEMENTED**: client page; parallel fetch of folder metadata and letters; Delete button with `window.confirm` showing letter count warning; MailboxList with custom empty message
+- `src/app/api/letters/[id]/block-sender/route.ts` — **FULLY IMPLEMENTED**: DELIVERED+recipient check; self-block prevention; upsert BlockList (idempotent, no-op if already blocked)
+- `src/app/api/letters/[id]/report/route.ts` — **FULLY IMPLEMENTED**: DELIVERED+recipient check; optional reason (max 1000 chars); inserts Report record; returns 201
+- `src/app/api/letters/[id]/move/route.ts` — **FULLY IMPLEMENTED**: DELIVERED+opened (opened_at not null) check; verifies target folder ownership; rejects UNOPENED/DRAFTS as targets; upserts LetterFolder
+
 ---
 
 ## 🔄 In Progress
 <!-- Claude updates this BEFORE starting each file.
      Clear it when the file moves to Completed. -->
-(none — Session 4 complete)
+(none — Session 5 complete)
 
 ---
 
@@ -159,7 +172,6 @@
 <!-- Claude records any intentional shortcuts, incomplete logic,
      or TODO comments left inside files. Be specific. -->
 
-- `src/lib/ratelimit.ts` — rate limiters defined + wired into send and auth routes, but NOT yet wired into lookup, pen-pal-match, and others (Session 5)
 - Partial index for `Letter.status = 'IN_TRANSIT'` must be created manually via SQL after `prisma db push` (documented in schema comments)
 - `src/app/api/cron/deliver/route.ts` — re-routing uses `sentAt > cutoff` but sentAt is not fetched in scope for `computeScheduledDelivery`; uses `now` as approximation (acceptable given 3-day window)
 - `src/app/app/compose/page.tsx` — `isPenPalEligible` is always `true` (simplified); a real check would call GET /api/me and check `availableForPenPalMatching` (Session 5)
@@ -249,6 +261,7 @@
     │   │   ├── ImageCarousel.tsx      — horizontal image scroll
     │   │   └── ImageLightbox.tsx      — full-size Radix dialog
     │   ├── layout/
+    │   │   ├── AppShell.tsx           — client auth guard + sidebar wrapper (Session 4)
     │   │   └── Sidebar.tsx            — left nav (mailbox + folders)
     │   └── ui/
     │       ├── TimezoneSelect.tsx     — IANA timezone picker
@@ -374,3 +387,22 @@
 - Rate limiting for lookup and pen-pal endpoints — Session 5
 
 **Next:** Session 5 — lookup API + pen-pal match + folders CRUD + block/report/move + rate limiting wiring
+
+### Session 5
+**Status:** Complete ✅
+
+**What was done:**
+- `src/app/api/lookup/route.ts` — anti-enumeration lookup; rate limited (identifierLookupLimiter, 10/hr per IP, fail-open); always returns same generic message; normalises identifier by type
+- `src/app/api/pen-pal-match/route.ts` — full matching algorithm: opt-in + deletion guards, MatchHistory deduplication (sorted ID pair), Luxon DST-aware timezone ±3h filter, SAME_REGION filter, random pick, atomic transaction (MatchHistory + DRAFT create)
+- `src/app/api/folders/route.ts` — GET (all folders with letter counts, system-first sort) + POST (create custom folder; name ≤30 chars, ≤30 max, case-insensitive uniqueness check in app code)
+- `src/app/api/folders/[id]/route.ts` — DELETE (ownership check, system folder guard, atomic: move letters to OPENED + delete folder)
+- `src/app/app/folder/[id]/page.tsx` — client page; parallel fetch; delete with confirm dialog + letter count warning; MailboxList
+- `src/app/api/letters/[id]/block-sender/route.ts` — idempotent upsert BlockList; self-block guard; DELIVERED+recipient auth
+- `src/app/api/letters/[id]/report/route.ts` — inserts Report record; optional reason (≤1000 chars); returns 201
+- `src/app/api/letters/[id]/move/route.ts` — verifies opened+delivered; target folder ownership; rejects UNOPENED/DRAFTS; upserts LetterFolder
+- Rate limiting now wired into all intended routes: auth (signup/login), send, lookup, pen-pal-match
+
+**What was NOT done (by design):**
+- Settings page, account deletion endpoints, landing page update, README (Session 6)
+
+**Next:** Session 6 — settings page + PUT /api/me + identifiers CRUD + delete/cancel-delete + landing page + README
