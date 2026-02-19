@@ -1,109 +1,72 @@
 # HANDOFF.md
+<!-- Claude maintains this file continuously throughout every session.
+     Update after every completed file, not at the end of the session. -->
 
-## ✅ Completed
-<!-- Claude appends here after each finished file -->
+## 🎯 Next Session Starts Here
+<!-- Claude overwrites this section at the end of every session -->
+> Project not yet started. Begin with Session 1:
+> 1. Generate complete file/folder skeleton with stub files
+>    (correct imports, type signatures, TODO comments, no implementation)
+> 2. Implement prisma/schema.prisma in full
+> 3. Implement lib/auth.ts
+> 4. Implement api/auth/signup, api/auth/login, api/auth/logout
+> 5. Implement api/me
+> Do not implement anything beyond this list.
+
+---
+## 📌 Build Order
+<!-- Reference for sequencing. Tick off as fully completed.
+     Claude uses this to determine what comes next and avoid 
+     skipping ahead or working out of order. -->
+
+- [ ] Session 1: Skeleton + prisma/schema.prisma + auth files + api/me
+- [ ] Session 2: lib/delivery.ts + api/cron/deliver.ts + delivery tests
+- [ ] Session 3: Editor component + compose flow + drafts + api/upload.ts
+- [ ] Session 4: Mailbox UI pages + tear-open + reply + image carousel
+- [ ] Session 5: Pen pal + folders + block/report + rate limiting
+- [ ] Session 6: Settings + account deletion + landing page + README.md
+
+---
+
+## ✅ Completed Files
+<!-- Claude appends to this list after each finished file.
+     Format: - `path/to/file.ts` — what it does, anything notable -->
+
+
+---
 
 ## 🔄 In Progress
-<!-- Claude updates this before starting each file -->
+<!-- Claude updates this BEFORE starting each file.
+     Clear it when the file moves to Completed. -->
 _Nothing in progress yet._
 
-## ❌ Not Started
-<!-- Claude maintains this as a shrinking list -->
-All files — project not yet started.
+---
 
-## Key Decisions Made
-<!-- Claude records any choices that deviate from SPEC.md or fill gaps -->
-
-## Known Stubs / TODOs
-<!-- Claude records any intentional shortcuts taken under time pressure -->
-
-## Next Session Starts Here
-<!-- Claude overwrites this at the end of every session -->
-> Session 1 not yet started.
-```
+## ⚠️ Known Stubs / TODOs
+<!-- Claude records any intentional shortcuts, incomplete logic,
+     or TODO comments left inside files. Be specific. -->
+_None yet._
 
 ---
 
-## 3. Session Starter Prompt (Use This Every Time)
-
-Copy and paste this at the start of each Claude Code session, changing only the last line:
-```
-Read SPEC.md and HANDOFF.md before doing anything else.
-
-WORKING RULES FOR THIS SESSION:
-- Work on one file at a time
-- After completing each file: write it to disk, update HANDOFF.md 
-  "Completed" section, then confirm before moving on
-- Before starting each file: update HANDOFF.md "In Progress" section
-- Never defer HANDOFF.md updates to end of session
-- When the conversation is getting long: stop starting new files, 
-  finalize anything in progress with TODO comments, update HANDOFF.md, 
-  write a SESSION END summary in the "Next Session Starts Here" section
-
-THIS SESSION'S GOAL:
-[Paste the relevant section from the build order below]
-```
+## 🗂️ File Skeleton
+<!-- Claude fills this in during Session 1 when the skeleton is created.
+     Shows every file in the project and its purpose. -->
+_Not yet generated._
 
 ---
 
-## 4. Your 6-Session Build Order (Paste the Relevant One Each Time)
+## 🔑 Key Decisions Made
+<!-- Claude records any choices that deviate from SPEC.md,
+     fill in gaps the spec didn't cover, or choose between options.
+     Format: - Decision made — reason why -->
+_None yet._
 
-**Session 1**
-```
-Goal: Skeleton + Schema + Auth
-- Generate complete file/folder tree with stub files (correct imports, 
-  type signatures, TODO comments, no implementation yet)
-- Implement prisma/schema.prisma in full
-- Implement lib/auth.ts, api/auth/signup, api/auth/login, api/auth/logout
-- Implement api/me
-Do NOT implement anything else this session.
-```
+---
 
-**Session 2**
-```
-Goal: Delivery Logic + Cron
-- Implement lib/delivery.ts (computeScheduledDelivery with all test cases)
-- Implement api/cron/deliver.ts (full delivery processor)
-- Write unit tests for delivery logic
-Do NOT build UI this session.
-```
+## 📋 Session Log
+<!-- Claude appends a brief summary at the end of each session.
+     Format below. Never delete old entries. -->
 
-**Session 3**
-```
-Goal: Editor + Compose Flow + Drafts
-- Implement components/Editor.tsx (TipTap, copy/paste blocking, fonts)
-- Implement api/letters (create, update, delete draft)
-- Implement api/letters/[id]/send (quota check, scheduling, seal flow)
-- Implement api/upload.ts (Sharp processing, EXIF strip, thumbnail, HEIC)
-```
-
-**Session 4**
-```
-Goal: Mailbox UI
-- Implement app/app/unopened, app/app/opened, app/app/drafts pages
-- Implement app/app/letter/[id] (envelope view, tear-open, reply button)
-- Implement api/letters/[id]/tear-open
-- Implement api/letters/[id]/reply
-- Implement components/LetterCard.tsx, components/ImageCarousel.tsx
-```
-
-**Session 5**
-```
-Goal: Pen Pal + Folders + Block/Report + Rate Limiting
-- Implement api/pen-pal-match.ts
-- Implement api/folders (create, delete, move letter)
-- Implement api/letters/[id]/block-sender
-- Implement api/letters/[id]/report
-- Implement lib/ratelimit.ts (Upstash)
-- Implement api/lookup.ts
-```
-
-**Session 6**
-```
-Goal: Settings + Polish + README
-- Implement app/settings page (all settings from spec section 8E)
-- Implement account deletion + grace period logic
-- Implement app/safety static page
-- Implement landing page /
-- Generate README.md per spec section 15
-- Final pass: check all TODOs in HANDOFF.md and resolve or document
+### Session 1
+_Not yet started._
