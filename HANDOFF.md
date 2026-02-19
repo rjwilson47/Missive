@@ -4,25 +4,18 @@
 
 ## 🎯 Next Session Starts Here
 <!-- Claude overwrites this section at the end of every session -->
-> **Session 2 is complete.** Begin Session 3:
+> **Session 3 is complete.** Begin Session 4:
 >
-> 1. **Implement `src/components/editor/LetterEditor.tsx`** — TipTap-based typed letter editor:
->    - Extensions: Document, Paragraph, Text, Italic only (no bold, no headings, no lists)
->    - Block copy/cut/paste during composition (keydown + paste + contextmenu listeners)
->    - Font selector (6 stationery fonts, whole-letter via CSS class)
->    - Character counter (max 50,000; show warning at limit)
->    - Store content as ProseMirror JSON
-> 2. **Implement `src/app/signup/page.tsx` and `src/app/login/page.tsx`** — form UIs:
->    - Signup: username + password + region + timezone (TimezoneSelect)
->    - Login: username + password
->    - Both call the already-implemented API routes
->    - Full TimezoneSelect implementation (grouped, searchable, UTC offset labels)
-> 3. **Implement `src/app/api/letters/route.ts`** — GET (list drafts) + POST (create draft)
-> 4. **Implement `src/app/api/letters/[id]/route.ts`** — GET (single draft) + PUT (update draft) + DELETE (draft only)
-> 5. **Implement `src/app/api/upload/route.ts`** — image upload with Sharp (EXIF strip, resize, thumbnail, HEIC→JPG attempt)
-> 6. **Implement `src/lib/upload.ts`** — processImage(), uploadImageToStorage(), getSignedUrl(), validateImageFile()
-> 7. **Implement `src/app/app/drafts/page.tsx`** — draft list using GET /api/letters
-> 8. **Implement `src/app/app/compose/page.tsx`** — multi-step compose flow (address → type → write → review)
+> 1. **Implement `src/app/app/layout.tsx`** — auth guard (redirect to /login if no token) + Sidebar component
+> 2. **Implement `src/app/api/letters/[id]/route.ts` GET** — fetch letter detail (draft owner or recipient), generate signed URLs for all images
+> 3. **Implement `src/app/app/letter/[id]/page.tsx`** — letter detail view: render LetterView for DELIVERED letters (tear-open prompt), draft preview for DRAFT; fetch via GET /api/letters/:id
+> 4. **Implement `src/app/api/letters/[id]/tear-open/route.ts`** — POST: mark letter OPENED (set opened_at), move from UNOPENED to OPENED folder
+> 5. **Implement `src/app/api/letters/[id]/reply/route.ts`** — POST: create reply DRAFT with inReplyToId set
+> 6. **Implement `src/app/app/unopened/page.tsx`** — list UNOPENED letters (EnvelopeCard), click → /app/letter/:id
+> 7. **Implement `src/app/app/opened/page.tsx`** — list OPENED letters (EnvelopeCard)
+> 8. **Implement `src/components/mailbox/EnvelopeCard.tsx`** — letter card: sender, date, contentType icon
+> 9. **Implement `src/components/letter/LetterView.tsx`** — render typed letter (TipTap read-only) or image carousel (handwritten)
+> 10. **Implement `src/components/letter/ImageCarousel.tsx`** + **`ImageLightbox.tsx`** — horizontal scroll + full-size Radix dialog
 >
 > Do NOT implement anything beyond this list.
 
@@ -34,7 +27,7 @@
 
 - [x] Session 1: Skeleton + prisma/schema.prisma + auth files + api/me
 - [x] Session 2: lib/delivery.ts + api/cron/deliver.ts + delivery tests
-- [ ] Session 3: Editor component + compose flow + drafts + api/upload.ts
+- [x] Session 3: Editor component + compose flow + drafts + api/upload.ts
 - [ ] Session 4: Mailbox UI pages + tear-open + reply + image carousel
 - [ ] Session 5: Pen pal + folders + block/report + rate limiting
 - [ ] Session 6: Settings + account deletion + landing page + README.md
@@ -119,12 +112,30 @@
 - `src/app/api/letters/[id]/send/route.ts` — **FULLY IMPLEMENTED**: JWT auth → rate limit (fail open) → deletion guard → DRAFT ownership check → DailyQuota check (sender TZ, max 3/day) → recipient timezone lookup → computeScheduledDelivery() → atomic transaction (letter→IN_TRANSIT + DailyQuota upsert) → 200
 - `src/app/api/cron/deliver/route.ts` — **FULLY IMPLEMENTED**: CRON_SECRET auth → mark UNDELIVERABLE (null recipient + >3 days) → re-route still-unroutable letters (USERNAME/EMAIL/PHONE/ADDRESS with discoverability check) → deliver due letters (BlockList check → BLOCKED or DELIVERED + UNOPENED folder upsert); per-letter try/catch for resilience
 
+### Session 3 — Completed
+
+- `src/components/editor/LetterEditor.tsx` — **FULLY IMPLEMENTED**: TipTap (Document + Paragraph + Text + Italic only), copy/cut/paste/contextmenu blocked on ProseMirror DOM node when !readOnly, 6 stationery fonts via next/font/google CSS variables, character counter with 50k limit warning, onChange → ProseMirror JSON
+- `src/components/ui/TimezoneSelect.tsx` — **FULLY IMPLEMENTED**: ARIA combobox, Intl.supportedValuesOf source, DST-aware UTC offset labels, grouped by Americas/Europe/Asia-Pacific/Africa/Other, keyboard nav (↑↓ Enter Escape), outside-click close
+- `src/app/signup/page.tsx` — **FULLY IMPLEMENTED**: username/password/region/timezone form, calls POST /api/auth/signup, stores token in localStorage("missive_token"), redirects to /app/unopened
+- `src/app/login/page.tsx` — **FULLY IMPLEMENTED**: username/password form, calls POST /api/auth/login, stores token, redirects to /app/unopened
+- `src/app/api/letters/route.ts` — **FULLY IMPLEMENTED**: GET dispatches on folder param (DRAFTS by senderId+status, UNOPENED/OPENED/custom UUID via folderEntry relation), POST creates DRAFT with contentType/addressingInputType validation
+- `src/app/api/letters/[id]/route.ts` — **FULLY IMPLEMENTED**: PUT updates DRAFT fields (typed_body_json, font_family, addressingInputType/Value, recipientUserId — partial update, only supplied fields written); DELETE removes DRAFT; both enforce DRAFT-only guard + ownership check; GET still stub (Session 4)
+
+- `src/lib/upload.ts` — **FULLY IMPLEMENTED**: processImage() (Sharp: EXIF strip via .rotate(), HEIC→JPEG, PNG→PNG, thumbnail at 300px JPEG), uploadImageToStorage() (UUID-based storage paths `{letterId}/{orderIndex}-{uuid}.ext`, main + thumbnail with cleanup on thumb fail), getSignedUrl() (1hr expiry)
+- `src/app/api/upload/route.ts` — **FULLY IMPLEMENTED**: multipart formData (file, letterId, orderIndex), auth + DRAFT ownership guard, image count (≤10) + total size (≤25MB) limits, validateImageFile + scanUpload + processImage + uploadImageToStorage pipeline, DB insert with snake_case LetterImage fields, returns LetterImageShape (201)
+- `src/app/app/drafts/page.tsx` — **FULLY IMPLEMENTED**: client page, fetches GET /api/letters?folder=DRAFTS, lists drafts with contentType label + createdAt date, "Continue" navigates to /app/compose?draft=UUID&contentType=TYPE, "Delete" calls DELETE /api/letters/:id, empty state + error handling
+- `src/app/app/compose/page.tsx` — **FULLY IMPLEMENTED**: 4-step flow (address→type→write→review), StepIndicator breadcrumb, continues existing draft via ?draft=UUID&contentType query params
+- `src/components/compose/AddressStep.tsx` — **FULLY IMPLEMENTED**: radio buttons for USERNAME/EMAIL/PHONE/ADDRESS + pen pal, text input with placeholder per mode, routing disclaimer for non-username modes, calls onNext(type, value)
+- `src/components/compose/TypeStep.tsx` — **FULLY IMPLEMENTED**: TYPED / HANDWRITTEN cards (click to select+advance), VOICE card disabled with "Coming soon"
+- `src/components/compose/WriteStep.tsx` — **FULLY IMPLEMENTED**: TYPED renders TypedWriter (LetterEditor + font selector + autosave debounced 2.5s via PUT /api/letters/:id); HANDWRITTEN renders HandwrittenUploader (file input, POST /api/upload per image, ordered list, remove buttons, 10-slot limit)
+- `src/components/compose/ReviewStep.tsx` — **FULLY IMPLEMENTED**: delivery estimate display (formatted ISO or generic "1–5 business days"), "Seal envelope & send" → POST /api/letters/:id/send, success state + 1.5s redirect to /app/unopened, error handling
+
 ---
 
 ## 🔄 In Progress
 <!-- Claude updates this BEFORE starting each file.
      Clear it when the file moves to Completed. -->
-_(nothing — Session 2 complete; start Session 3 items above)_
+(none — Session 3 complete)
 
 ---
 
@@ -133,11 +144,11 @@ _(nothing — Session 2 complete; start Session 3 items above)_
      or TODO comments left inside files. Be specific. -->
 
 - `src/lib/ratelimit.ts` — rate limiters defined + wired into send and auth routes, but NOT yet wired into lookup, pen-pal-match, and others (Session 5)
-- `src/lib/upload.ts` — `processImage()` and `uploadImageToStorage()` throw "not yet implemented" (Session 3)
-- `src/components/ui/TimezoneSelect.tsx` — minimal native `<select>` with no UTC offset labels, grouping, or autocomplete (Session 3)
-- `src/app/signup/page.tsx` + `login/page.tsx` — form UI not implemented; API routes are done; forms deferred to Session 3
 - Partial index for `Letter.status = 'IN_TRANSIT'` must be created manually via SQL after `prisma db push` (documented in schema comments)
 - `src/app/api/cron/deliver/route.ts` — re-routing uses `sentAt > cutoff` but sentAt is not fetched in scope for `computeScheduledDelivery`; uses `now` as approximation (acceptable given 3-day window)
+- `src/app/app/compose/page.tsx` — `isPenPalEligible` is always `true` (simplified); a real check would call GET /api/me and check `availableForPenPalMatching` (Session 5)
+- `src/components/compose/WriteStep.tsx` — HandwrittenUploader's "Remove" button only removes from local state, not from Supabase Storage or the DB LetterImage row (acceptable for MVP; real delete needs a DELETE /api/upload/:id endpoint in Session 4+)
+- `src/app/api/letters/[id]/route.ts` — GET still stub (Session 4, needs signed URL generation)
 
 ---
 
@@ -295,3 +306,29 @@ _(nothing — Session 2 complete; start Session 3 items above)_
 - Signup/login forms still stubs (Session 3)
 
 **Next:** Session 3 — Editor component + compose flow + drafts CRUD + image upload
+
+### Session 3
+**Status:** Complete ✅
+
+**What was done:**
+- `src/components/editor/LetterEditor.tsx` — TipTap editor (Document + Paragraph + Text + Italic only), EXIF-stripped copy/paste blocked, 6 stationery fonts via next/font/google CSS variables, 50k character counter
+- `src/components/ui/TimezoneSelect.tsx` — full ARIA combobox with DST-aware UTC offsets, grouped by region, keyboard nav
+- `src/app/signup/page.tsx` + `src/app/login/page.tsx` — complete form UIs with token storage and redirect
+- `src/app/api/letters/route.ts` — GET (DRAFTS/UNOPENED/OPENED/custom folder) + POST (create DRAFT)
+- `src/app/api/letters/[id]/route.ts` — PUT (partial update DRAFT fields) + DELETE (DRAFT only); GET still stub
+- `src/lib/upload.ts` — processImage() (Sharp EXIF strip + HEIC→JPEG + thumbnail), uploadImageToStorage() (Supabase private bucket), getSignedUrl()
+- `src/app/api/upload/route.ts` — full image upload pipeline (validate→scan→process→store→DB insert)
+- `src/app/app/drafts/page.tsx` — draft list with continue and delete actions
+- `src/app/app/compose/page.tsx` — 4-step compose flow orchestrator with step indicator
+- `src/components/compose/AddressStep.tsx` — addressing form (USERNAME/EMAIL/PHONE/ADDRESS/pen pal)
+- `src/components/compose/TypeStep.tsx` — TYPED/HANDWRITTEN/VOICE(disabled) type selector
+- `src/components/compose/WriteStep.tsx` — TypedWriter (LetterEditor + autosave) + HandwrittenUploader (image upload)
+- `src/components/compose/ReviewStep.tsx` — delivery estimate + "Seal envelope" → POST send → redirect
+
+**What was NOT done (by design):**
+- `api/letters/[id]` GET (signed URLs — Session 4)
+- Pen pal eligibility check in compose (simplified to always-true — Session 5)
+- HandwrittenUploader "Remove" does not delete from Storage/DB (Session 4+)
+- App layout sidebar + auth guard still stub (Session 4)
+
+**Next:** Session 4 — Mailbox UI (unopened/opened/folder views) + letter detail (GET /api/letters/:id with signed URLs) + tear-open + reply flow + app layout auth guard + sidebar
