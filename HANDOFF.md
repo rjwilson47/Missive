@@ -4,25 +4,18 @@
 
 ## 🎯 Next Session Starts Here
 <!-- Claude overwrites this section at the end of every session -->
-> **Session 6 is complete. The MVP is fully implemented.**
+> **Remediation Session 1 COMPLETE. Resume with FIX-7.**
 >
-> All 6 sessions of the Missive build plan are done. The codebase is production-ready for an MVP launch. See `README.md` for deployment instructions.
+> FIX-1 through FIX-6 are done. See Remediation Order section below for full list.
+> Read AUDIT.md for detailed description of each remaining fix.
 >
-> **If continuing work, suggested post-MVP improvements (from README §11):**
-> 1. Vercel + Supabase production environment setup
-> 2. Add recovery email UI + Supabase password reset integration
-> 3. Content moderation hook in `src/lib/upload.ts` (currently a stub)
-> 4. Voice letter implementation (TipTap WriteStep + audio storage + LetterView rendering)
-> 5. Prisma migrate workflow (switch from `db push` to tracked migrations)
-> 6. Mobile/PWA enhancements (manifest.json, swipe gestures in ImageCarousel)
-> 7. Admin UI for Report review (basic list view of flagged letters)
+> **Next fix: FIX-7 — Settings page recovery email field**
+> - Add recovery email input to `src/app/app/settings/page.tsx`
+> - Add `recovery_email` field to `PUT /api/me` handler in `src/app/api/me/route.ts`
+> - Warning text: "Make sure this email is correct. We cannot verify it, and this is your only way to reset your password."
+> - Follow immediately with FIX-8 (forgot password) and FIX-9 (Supabase sync) in same session if time allows.
 >
-> **What is NOT implemented (intentional MVP scope):**
-> - Admin UI for moderation
-> - Recovery email UI (field exists in DB but not exposed in Settings)
-> - Content moderation scanning (stub in upload.ts)
-> - Voice letters (ContentType enum prepared, UI shows "coming soon")
-> - Account purge cron job (markedForDeletionAt is set, but no job deletes after 30 days)
+> **Work strictly in Remediation Order. Update "In Progress" before each fix. Tick off after each fix.**
 
 ---
 ## 📌 Build Order
@@ -479,18 +472,18 @@
 <!-- Work through these in order. Tick off as fully completed. -->
 
 ### 🔴 Critical Blockers
-- [ ] send/route.ts — Prisma field names (sent_at etc.)
-- [ ] send/route.ts — DailyQuota sent_count
-- [ ] WriteStep.tsx — font prop name
+- [x] FIX-1 · send/route.ts — Prisma field names (sent_at, scheduled_delivery_at, sender_region_at_send, sender_timezone_at_send)
+- [x] FIX-2 · send/route.ts — DailyQuota sent_count (was sentCount)
+- [x] FIX-3 · WriteStep.tsx — font prop → fontFamily
 
 ### 🟠 High Priority
-- [ ] Italic toolbar button + aria-pressed
-- [ ] ReviewStep — pass real scheduledDeliveryAt
-- [ ] isPenPalEligible — read from real user flag
-- [ ] Settings — recovery email UI + warning text
-- [ ] /forgot-password page + API route
-- [ ] Recovery email → Supabase auth email sync
-- [ ] Cron — 30-day account deletion phase
+- [x] FIX-4 · LetterEditor.tsx — italic toolbar button + aria-pressed
+- [x] FIX-5 · ReviewStep — pass real scheduledDeliveryAt (POST /api/letters now resolves recipient + computes estimate)
+- [x] FIX-6 · isPenPalEligible — read from GET /api/me (was hardcoded true)
+- [ ] FIX-7 · Settings — recovery email UI + PUT /api/me support
+- [ ] FIX-8 · Login — /forgot-password page + API route
+- [ ] FIX-9 · Recovery email → Supabase auth email sync in PUT /api/me
+- [ ] FIX-10 · Cron — 30-day account deletion phase
 
 ### 🟡 Medium Priority
 - [ ] Handwritten image server-side delete on removal
@@ -514,4 +507,15 @@
 
 ## 📋 Session Log (continued)
 ### Remediation Session 1
-_Not yet started._
+**Status:** Complete ✅ — FIX-1 through FIX-6 done
+
+**What was done:**
+- Created `AUDIT.md` — full structured audit of codebase vs SPEC.md, 14 findings with FIX-N labels and priority order
+- **FIX-1** · `src/app/api/letters/[id]/send/route.ts` — Letter Prisma field names: `sentAt`→`sent_at`, `scheduledDeliveryAt`→`scheduled_delivery_at`, `senderRegionAtSend`→`sender_region_at_send`, `senderTimezoneAtSend`→`sender_timezone_at_send`. Every send was failing at runtime.
+- **FIX-2** · `src/app/api/letters/[id]/send/route.ts` — DailyQuota `sentCount`→`sent_count` (type, select, condition, upsert update, upsert create). Quota was never enforced.
+- **FIX-3** · `src/components/compose/WriteStep.tsx` — `font={font}`→`fontFamily={font}` prop. Font selection was silently ignored.
+- **FIX-4** · `src/components/editor/LetterEditor.tsx` — Added italic toolbar button (`role="toolbar"`, `aria-label`, `aria-pressed`, active/inactive styling). Only in composition mode.
+- **FIX-5** · `src/app/api/letters/route.ts` POST + `src/app/app/compose/page.tsx` — POST /api/letters now resolves USERNAME recipient immediately, computes `scheduledDeliveryAt` server-side, returns in response. ReviewStep shows real delivery date.
+- **FIX-6** · `src/app/app/compose/page.tsx` — `isPenPalEligible` now fetched from `GET /api/me` on mount (was hardcoded `true`).
+
+**Next:** FIX-7 — Settings recovery email UI + PUT /api/me
