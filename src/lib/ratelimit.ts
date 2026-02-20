@@ -22,9 +22,10 @@ import { Redis } from "@upstash/redis";
 // ===== Redis client =====
 
 /**
- * Lazily-created Redis client for Upstash.
- * Throws at runtime (not build time) if env vars are missing, so the app can
- * still build without Upstash configured (useful for local dev without Redis).
+ * Creates a Redis client for Upstash.
+ * Throws at call time if env vars are missing — called only from inside
+ * makeLazy() factories, which run on first `.limit()` call (inside a request
+ * handler), never at module load / build time.
  */
 function getRedis(): Redis {
   const url = process.env.UPSTASH_REDIS_REST_URL;
@@ -39,6 +40,24 @@ function getRedis(): Redis {
   return new Redis({ url, token });
 }
 
+// ===== Lazy factory =====
+
+/**
+ * Wraps a Ratelimit factory in a Proxy so the real instance is only created
+ * on first property access (i.e. the first `.limit()` call inside a request
+ * handler). This prevents getRedis() — and thus env-var validation — from
+ * running at module load / Next.js build time.
+ */
+function makeLazy(factory: () => Ratelimit): Ratelimit {
+  let instance: Ratelimit | undefined;
+  return new Proxy({} as Ratelimit, {
+    get(_target, prop) {
+      if (!instance) instance = factory();
+      return (instance as unknown as Record<PropertyKey, unknown>)[prop];
+    },
+  });
+}
+
 // ===== Rate limiters =====
 
 /**
@@ -48,32 +67,38 @@ function getRedis(): Redis {
  * Anti-enumeration: the endpoint always returns a generic "If an account
  * exists, we'll route it." response — rate limiting prevents bulk scanning.
  */
-export const identifierLookupLimiter = new Ratelimit({
-  redis: getRedis(),
-  limiter: Ratelimit.slidingWindow(10, "1 h"),
-  prefix: "rl:lookup",
-});
+export const identifierLookupLimiter = makeLazy(() =>
+  new Ratelimit({
+    redis: getRedis(),
+    limiter: Ratelimit.slidingWindow(10, "1 h"),
+    prefix: "rl:lookup",
+  })
+);
 
 /**
  * Rate limiter for the send letter endpoint.
  * Limit: 5 requests per hour per user ID (in addition to the 3/day daily quota).
  * Prevents rapid retry attacks that circumvent the quota check.
  */
-export const sendLimiter = new Ratelimit({
-  redis: getRedis(),
-  limiter: Ratelimit.slidingWindow(5, "1 h"),
-  prefix: "rl:send",
-});
+export const sendLimiter = makeLazy(() =>
+  new Ratelimit({
+    redis: getRedis(),
+    limiter: Ratelimit.slidingWindow(5, "1 h"),
+    prefix: "rl:send",
+  })
+);
 
 /**
  * Rate limiter for login and signup endpoints.
  * Limit: 5 requests per 15 minutes per IP address.
  */
-export const authLimiter = new Ratelimit({
-  redis: getRedis(),
-  limiter: Ratelimit.slidingWindow(5, "15 m"),
-  prefix: "rl:auth",
-});
+export const authLimiter = makeLazy(() =>
+  new Ratelimit({
+    redis: getRedis(),
+    limiter: Ratelimit.slidingWindow(5, "15 m"),
+    prefix: "rl:auth",
+  })
+);
 
 // ===== Helpers =====
 
