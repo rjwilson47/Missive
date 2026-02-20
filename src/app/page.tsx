@@ -23,8 +23,8 @@ export default function LandingPage() {
   return (
     <main className="min-h-screen bg-paper text-ink">
       {/* ── Hero ──────────────────────────────────────────────────────────── */}
-      <section className="flex flex-col items-center justify-center min-h-[70vh] px-6 text-center space-y-8">
-        <div className="space-y-4 max-w-xl">
+      <section className="flex flex-col items-center justify-center min-h-[45vh] px-6 pt-12 pb-8 text-center space-y-5">
+        <div className="space-y-3 max-w-xl">
           <p className="text-xs uppercase tracking-widest text-ink-muted font-medium">
             Slow mail for the modern age
           </p>

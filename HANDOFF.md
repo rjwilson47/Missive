@@ -4,17 +4,17 @@
 
 ## 🎯 Next Session Starts Here
 <!-- Claude overwrites this section at the end of every session -->
-> **Branding session in progress. CHANGE 1 complete (Missive → Penned rename).**
+> **Branding session in progress. CHANGE 1 + CHANGE 2 complete.**
 >
 > Working through 9 user-requested changes on branch `claude/explore-project-structure-bYDYo`.
-> CHANGE 1 done. CHANGES 2–9 pending confirmation and implementation.
+> CHANGES 1–2 done. CHANGES 3–9 pending confirmation and implementation.
 
 ### Change Log (this session)
 - **CHANGE 1 ✅** — Renamed all user-facing "Missive" strings to "Penned" across:
   `src/app/layout.tsx`, `src/app/app/layout.tsx`, `src/app/page.tsx`, `src/app/safety/page.tsx`.
   Code comments, variable names, and file names left unchanged. Added tagline about letters being
   "penned and postmarked" on the front page hero.
-- **CHANGE 2** — Pending confirmation
+- **CHANGE 2 ✅** — Reduced homepage hero whitespace: `min-h-[70vh]` → `min-h-[45vh]`, added `pt-12 pb-8` for tighter vertical framing, `space-y-8` → `space-y-5` between header and buttons, `space-y-3` inside header block.
 - **CHANGE 3** — Pending confirmation
 - **CHANGE 4** — Pending confirmation
 - **CHANGE 5** — Pending confirmation
