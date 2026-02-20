@@ -140,7 +140,7 @@ function TypedWriter({
       </div>
 
       {/* Editor */}
-      <LetterEditor font={font} onChange={handleChange} />
+      <LetterEditor fontFamily={font} onChange={handleChange} />
 
       <Button variant="primary" size="md" onClick={onNext}>
         Continue to review

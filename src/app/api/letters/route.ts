@@ -22,6 +22,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getUserFromHeader } from "@/lib/supabase";
 import { getAppUser } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { computeScheduledDelivery } from "@/lib/delivery";
 import type { LetterSummary } from "@/types";
 
 const UNAUTHORIZED = NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -185,6 +186,28 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   }
 
   try {
+    // For USERNAME addressing, attempt to resolve the recipient immediately.
+    // This makes the draft routable without waiting for the cron job, and lets
+    // us compute a real delivery estimate for the ReviewStep.
+    let resolvedRecipientId: string | null =
+      typeof recipientUserId === "string" ? recipientUserId : null;
+    let resolvedRecipientTimezone: string | null = null;
+
+    if (
+      addressingInputType === "USERNAME" &&
+      typeof addressingInputValue === "string" &&
+      addressingInputValue.trim() !== ""
+    ) {
+      const recipient = await prisma.user.findFirst({
+        where: { username: { equals: addressingInputValue.trim(), mode: "insensitive" } },
+        select: { id: true, timezone: true },
+      });
+      if (recipient) {
+        resolvedRecipientId = recipient.id;
+        resolvedRecipientTimezone = recipient.timezone;
+      }
+    }
+
     const letter = await prisma.letter.create({
       data: {
         senderId: me.id,
@@ -194,12 +217,24 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
           addressingInputType: addressingInputType as (typeof VALID_ADDRESSING_TYPES)[number],
         }),
         ...(typeof addressingInputValue === "string" && { addressingInputValue }),
-        ...(typeof recipientUserId === "string" && { recipientUserId }),
+        ...(resolvedRecipientId !== null && { recipientUserId: resolvedRecipientId }),
       },
       select: { id: true },
     });
 
-    return NextResponse.json({ id: letter.id }, { status: 201 });
+    // Compute a delivery estimate if we resolved the recipient's timezone.
+    // This is passed to the client so ReviewStep can show "Will arrive Wednesday Feb 21 at 4pm"
+    // instead of the generic "1-5 business days" fallback.
+    let scheduledDeliveryAt: string | null = null;
+    if (resolvedRecipientTimezone) {
+      const { scheduledDeliveryUtc } = computeScheduledDelivery(
+        new Date(),
+        resolvedRecipientTimezone
+      );
+      scheduledDeliveryAt = scheduledDeliveryUtc.toISOString();
+    }
+
+    return NextResponse.json({ id: letter.id, scheduledDeliveryAt }, { status: 201 });
   } catch (err) {
     console.error("[POST /api/letters] Error:", err);
     return NextResponse.json({ error: "Server error." }, { status: 500 });

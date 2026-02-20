@@ -70,6 +70,10 @@ export default function ComposePage() {
   const [addressValue, setAddressValue] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
+  // Delivery estimate passed to ReviewStep (null = show generic "1-5 business days")
+  const [scheduledDeliveryAt, setScheduledDeliveryAt] = useState<string | null>(null);
+  // Pen pal eligibility — read from user's real opt-in setting (FIX-6)
+  const [isPenPalEligible, setIsPenPalEligible] = useState(false);
 
   // Handle ?draft=UUID&contentType=TYPED — continue an existing draft
   useEffect(() => {
@@ -81,6 +85,22 @@ export default function ComposePage() {
       setStep("write");
     }
   }, [searchParams]);
+
+  // Fetch the current user's pen pal opt-in setting (FIX-6).
+  // AppShell already verified auth; this second call is lightweight and safe.
+  useEffect(() => {
+    const token =
+      typeof window !== "undefined" ? (localStorage.getItem(TOKEN_KEY) ?? "") : "";
+    if (!token) return;
+    fetch("/api/me", { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => r.json())
+      .then((data: { availableForPenPalMatching?: boolean }) => {
+        if (data.availableForPenPalMatching) setIsPenPalEligible(true);
+      })
+      .catch(() => {
+        // Fail silently — isPenPalEligible stays false, hiding the pen pal button
+      });
+  }, []);
 
   function handleAddressNext(type: AddressMode, value: string) {
     setAddressMode(type);
@@ -121,8 +141,9 @@ export default function ComposePage() {
         return;
       }
 
-      const data = (await res.json()) as { id: string };
+      const data = (await res.json()) as { id: string; scheduledDeliveryAt: string | null };
       setDraftId(data.id);
+      setScheduledDeliveryAt(data.scheduledDeliveryAt ?? null);
       setStep("write");
     } catch {
       setCreateError("Network error. Please try again.");
@@ -162,7 +183,7 @@ export default function ComposePage() {
       {step === "address" && (
         <AddressStep
           onNext={handleAddressNext}
-          isPenPalEligible={true}
+          isPenPalEligible={isPenPalEligible}
         />
       )}
 
@@ -179,7 +200,7 @@ export default function ComposePage() {
       )}
 
       {step === "review" && draftId && (
-        <ReviewStep draftId={draftId} scheduledDeliveryAt={null} />
+        <ReviewStep draftId={draftId} scheduledDeliveryAt={scheduledDeliveryAt} />
       )}
     </div>
   );

@@ -133,7 +133,7 @@ export async function POST(
   const senderTz = currentUser.timezone;
   const senderLocalDate = DateTime.now().setZone(senderTz).toFormat("yyyy-MM-dd");
 
-  let quotaRecord: { sentCount: number } | null;
+  let quotaRecord: { sent_count: number } | null;
   try {
     quotaRecord = await prisma.dailyQuota.findUnique({
       where: {
@@ -142,14 +142,14 @@ export async function POST(
           date: senderLocalDate,
         },
       },
-      select: { sentCount: true },
+      select: { sent_count: true },
     });
   } catch (err) {
     console.error("[send] DB error fetching quota:", err);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 
-  if (quotaRecord && quotaRecord.sentCount >= DAILY_SEND_LIMIT) {
+  if (quotaRecord && quotaRecord.sent_count >= DAILY_SEND_LIMIT) {
     return NextResponse.json(
       { error: "You've sent 3 letters today. Try again tomorrow." },
       { status: 429 }
@@ -189,11 +189,11 @@ export async function POST(
         where: { id: letterId },
         data: {
           status: "IN_TRANSIT",
-          sentAt: now,
-          scheduledDeliveryAt: scheduledDeliveryUtc,
+          sent_at: now,
+          scheduled_delivery_at: scheduledDeliveryUtc,
           // Capture sender context at the moment of sending (immutable record)
-          senderRegionAtSend: currentUser.region,
-          senderTimezoneAtSend: senderTz,
+          sender_region_at_send: currentUser.region,
+          sender_timezone_at_send: senderTz,
         },
       }),
 
@@ -205,11 +205,11 @@ export async function POST(
             date: senderLocalDate,
           },
         },
-        update: { sentCount: { increment: 1 } },
+        update: { sent_count: { increment: 1 } },
         create: {
           userId: currentUser.id,
           date: senderLocalDate,
-          sentCount: 1,
+          sent_count: 1,
         },
       }),
     ]);

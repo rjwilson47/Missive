@@ -211,6 +211,32 @@ export default function LetterEditor({
 
   return (
     <div className="flex flex-col gap-2">
+      {/* Toolbar — composition mode only; hidden in readOnly */}
+      {!readOnly && (
+        <div
+          className="flex items-center gap-1 px-1"
+          role="toolbar"
+          aria-label="Text formatting"
+        >
+          <button
+            type="button"
+            aria-label="Italic"
+            aria-pressed={editor?.isActive("italic") ?? false}
+            onClick={() => editor?.chain().focus().toggleItalic().run()}
+            className={[
+              "h-7 w-7 rounded text-sm flex items-center justify-center italic",
+              "border transition-colors",
+              "focus:outline-none focus-visible:ring-2 focus-visible:ring-seal",
+              editor?.isActive("italic")
+                ? "bg-ink text-paper border-ink"
+                : "bg-white text-ink border-paper-dark hover:border-ink-faint",
+            ].join(" ")}
+          >
+            I
+          </button>
+        </div>
+      )}
+
       {/* Editor surface — all font CSS variables defined on this element */}
       <div
         className={[
