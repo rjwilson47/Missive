@@ -4,24 +4,40 @@
 
 ## 🎯 Next Session Starts Here
 <!-- Claude overwrites this section at the end of every session -->
-> **Branding session in progress. CHANGE 1 + CHANGE 2 complete.**
+> **Hero tagline styling tweak complete. Session done.**
 >
-> Working through 9 user-requested changes on branch `claude/explore-project-structure-bYDYo`.
-> CHANGES 1–2 done. CHANGES 3–9 pending confirmation and implementation.
+> 1 change applied to `src/app/page.tsx` and pushed to `claude/explore-project-structure-bYDYo`.
 
-### Change Log (this session)
+### Change Log (this session — hero tagline styling)
+- **CHANGE 1 ✅** — Hero tagline "Write letters…" paragraph: font reduced one step (`text-lg sm:text-xl` → `text-base sm:text-lg`), line spacing increased (`leading-relaxed` → `leading-loose`) for more breathing room between the three lines.
+
+### Change Log (previous session — homepage spacing + tagline)
+- **CHANGE 1 ✅** — Reduced padding on all sub-sections by one Tailwind step (`py-16`→`py-12`, `py-12`→`py-10`). Hero section (`pt-12 pb-8`) left untouched. Affected: "In a world of…", "How it works", "Looking for someone?", "Write to a stranger.", "A few ground rules".
+- **CHANGE 2 ✅** — Hero tagline split into 3 explicit lines via two `<br />` tags: "Write letters…" / "Intentionally slow…" / "Just like the post used to be." First break changed from `hidden sm:block` to always-on.
+
+### Change Log (previous session)
 - **CHANGE 1 ✅** — Renamed all user-facing "Missive" strings to "Penned" across:
   `src/app/layout.tsx`, `src/app/app/layout.tsx`, `src/app/page.tsx`, `src/app/safety/page.tsx`.
   Code comments, variable names, and file names left unchanged. Added tagline about letters being
   "penned and postmarked" on the front page hero.
 - **CHANGE 2 ✅** — Reduced homepage hero whitespace: `min-h-[70vh]` → `min-h-[45vh]`, added `pt-12 pb-8` for tighter vertical framing, `space-y-8` → `space-y-5` between header and buttons, `space-y-3` inside header block.
-- **CHANGE 3** — Pending confirmation
-- **CHANGE 4** — Pending confirmation
-- **CHANGE 5** — Pending confirmation
-- **CHANGE 6** — Pending confirmation
-- **CHANGE 7** — Pending confirmation
-- **CHANGE 8** — Pending analysis + confirmation
-- **CHANGE 9** — Pending analysis + confirmation
+- **CHANGE 3 ✅** — Added logout button to `Sidebar.tsx` below Settings. Calls `POST /api/auth/logout` with Bearer token, clears `missive_token` from localStorage, redirects to `/`. Styled as `text-seal/80` (muted red) with `hover:text-seal` to distinguish from nav links.
+- **CHANGE 4 ✅** — Settings link in `Sidebar.tsx`: removed `text-ink-muted` override, added `font-medium`. Now renders in full dark `ink` (#1a1a1a) with medium weight, standing out from other sidebar items.
+- **CHANGE 5 ✅** — Draft cards now show recipient, started date, and last-edited date.
+  - `LetterSummary` type extended with `updatedAt`, `recipientUsername`, `addressingInputValue`
+  - `letterToSummary()` in `api/letters/route.ts` populates new fields; DRAFTS query now includes `recipient: { select: { username: true } }`
+  - `drafts/page.tsx` card: shows "To: [username|input|No recipient yet]", "Started [date]", "· Edited [date]" (edited line only shown if updatedAt ≠ createdAt)
+  - **BUILD FIX ✅** — `api/letters/[id]/route.ts` was missing the three new `LetterSummary` fields in its `LetterDetail` construction; added `updatedAt`, `recipientUsername`, `addressingInputValue` + included `recipient` in Prisma query
+- **CHANGE 6 ✅** — Homepage CTA: "Start writing" → "Create Account" in `src/app/page.tsx`.
+- **CHANGE 7 ✅** — Added "← Back to homepage" link (styled as subtle underline text) below the form on both `signup/page.tsx` and `login/page.tsx`.
+- **CHANGE 8 ✅** — Region field replaced with grouped sub-regional dropdown (17 options across 5 continent groups) in `signup/page.tsx` and `settings/page.tsx`. `REGION_GROUPS` constant defined inline in each file. Pen pal SAME_REGION matching now reliable (exact string match on consistent values). Postmarks read naturally ("Sent from Western Europe"). No schema/API changes needed.
+- **CHANGE 9 ✅** — Welcome letter on signup via system user approach. Added to `src/lib/auth.ts`:
+  - `SYSTEM_USER_SUPABASE_UUID` constant (reserved fake UUID `00000000-0000-0000-0000-000000000001`)
+  - `getOrCreateSystemUser()` — idempotent; creates `penned` user in DB on first signup
+  - `buildWelcomeLetterJson(username)` — TipTap/ProseMirror JSON, personalised with username
+  - `createWelcomeLetter(newUserId, username)` — creates UNOPENED folder if needed, inserts letter directly as DELIVERED + assigns to folder
+  - Called in `signupUser()` as step 5b (best-effort, non-fatal — failure is logged, signup proceeds)
+  - Letter: contentType=TYPED, font=Crimson Text, status=DELIVERED, sender_region="Penned HQ"
 
 ---
 ## 📌 Build Order

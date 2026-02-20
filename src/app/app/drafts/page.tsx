@@ -29,6 +29,12 @@ function contentTypeLabel(ct: string): string {
   return "Letter";
 }
 
+function recipientLabel(draft: LetterSummary): string {
+  if (draft.recipientUsername) return draft.recipientUsername;
+  if (draft.addressingInputValue) return draft.addressingInputValue;
+  return "No recipient yet";
+}
+
 export default function DraftsPage() {
   const router = useRouter();
   const [drafts, setDrafts] = useState<LetterSummary[]>([]);
@@ -123,13 +129,21 @@ export default function DraftsPage() {
             className="flex items-center justify-between rounded border border-paper-dark bg-white px-4 py-3 shadow-envelope"
           >
             <button
-              className="flex-1 text-left space-y-0.5 hover:opacity-80 focus:outline-none focus-visible:underline"
+              className="flex-1 text-left space-y-1 hover:opacity-80 focus:outline-none focus-visible:underline"
               onClick={() => handleContinue(draft)}
             >
               <p className="text-sm font-medium text-ink">
                 {contentTypeLabel(draft.contentType)}
               </p>
-              <p className="text-xs text-ink-muted">Started {formatDate(draft.createdAt)}</p>
+              <p className="text-xs text-ink-muted">
+                To: <span className="text-ink">{recipientLabel(draft)}</span>
+              </p>
+              <p className="text-xs text-ink-faint">
+                Started {formatDate(draft.createdAt)}
+                {draft.updatedAt !== draft.createdAt && (
+                  <> · Edited {formatDate(draft.updatedAt)}</>
+                )}
+              </p>
             </button>
 
             <Button

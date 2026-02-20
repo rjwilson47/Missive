@@ -16,8 +16,10 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import type { FolderShape } from "@/types";
+
+const TOKEN_KEY = "missive_token";
 
 interface SidebarProps {
   customFolders?: FolderShape[];
@@ -48,6 +50,17 @@ function navLinkClass(href: string, pathname: string, exact = false): string {
  */
 export default function Sidebar({ customFolders = [] }: SidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
+
+  async function handleLogout() {
+    const token = localStorage.getItem(TOKEN_KEY);
+    await fetch("/api/auth/logout", {
+      method: "POST",
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    localStorage.removeItem(TOKEN_KEY);
+    router.replace("/");
+  }
 
   return (
     <nav
@@ -90,14 +103,20 @@ export default function Sidebar({ customFolders = [] }: SidebarProps) {
         </div>
       )}
 
-      {/* Settings — pushed to bottom */}
-      <div className="mt-auto pt-2 border-t border-paper-dark">
+      {/* Settings + Logout — pushed to bottom */}
+      <div className="mt-auto pt-2 border-t border-paper-dark flex flex-col gap-1">
         <Link
           href="/app/settings"
-          className={navLinkClass("/app/settings", pathname) + " text-ink-muted"}
+          className={navLinkClass("/app/settings", pathname) + " font-medium"}
         >
           Settings
         </Link>
+        <button
+          onClick={handleLogout}
+          className="block w-full text-left px-3 py-2 text-sm rounded transition-colors text-seal/80 hover:bg-paper-dark hover:text-seal"
+        >
+          Log out
+        </button>
       </div>
     </nav>
   );

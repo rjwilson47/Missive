@@ -23,6 +23,14 @@ import TimezoneSelect from "@/components/ui/TimezoneSelect";
 
 const TOKEN_KEY = "missive_token";
 
+const REGION_GROUPS = [
+  { group: "Americas",  options: ["North America", "Central America & Caribbean", "South America"] },
+  { group: "Europe",    options: ["Western Europe", "Northern Europe", "Southern Europe", "Eastern Europe"] },
+  { group: "Asia",      options: ["East Asia", "Southeast Asia", "South Asia", "Central Asia", "Middle East"] },
+  { group: "Africa",    options: ["North Africa", "Sub-Saharan Africa"] },
+  { group: "Oceania",   options: ["Australia & New Zealand", "Pacific Islands"] },
+] as const;
+
 // ===== Helpers =====
 
 /** Formats an ISO timestamp as a human-readable date (e.g. "19 Mar 2026"). */
@@ -446,15 +454,22 @@ export default function SettingsPage() {
             <label htmlFor="region" className="block text-sm font-medium text-ink">
               Region
             </label>
-            <input
+            <select
               id="region"
-              type="text"
               value={region}
               onChange={(e) => setRegion(e.target.value)}
               disabled={profileSaving}
               className="w-full border border-paper-dark rounded px-3 py-2 text-sm text-ink bg-white focus-visible:ring-2 focus-visible:ring-seal focus:outline-none disabled:opacity-60"
-              placeholder="e.g. Victoria, AU"
-            />
+            >
+              <option value="">Select your region…</option>
+              {REGION_GROUPS.map(({ group, options }) => (
+                <optgroup key={group} label={group}>
+                  {options.map((opt) => (
+                    <option key={opt} value={opt}>{opt}</option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
           </div>
 
           {/* Timezone */}

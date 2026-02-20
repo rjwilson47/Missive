@@ -17,6 +17,14 @@ import TimezoneSelect from "@/components/ui/TimezoneSelect";
 
 const TOKEN_KEY = "missive_token";
 
+const REGION_GROUPS = [
+  { group: "Americas",  options: ["North America", "Central America & Caribbean", "South America"] },
+  { group: "Europe",    options: ["Western Europe", "Northern Europe", "Southern Europe", "Eastern Europe"] },
+  { group: "Asia",      options: ["East Asia", "Southeast Asia", "South Asia", "Central Asia", "Middle East"] },
+  { group: "Africa",    options: ["North Africa", "Sub-Saharan Africa"] },
+  { group: "Oceania",   options: ["Australia & New Zealand", "Pacific Islands"] },
+] as const;
+
 export default function SignupPage() {
   const router = useRouter();
 
@@ -140,17 +148,24 @@ export default function SignupPage() {
             <label htmlFor="region" className="block text-sm font-medium text-ink">
               Region
             </label>
-            <input
+            <select
               id="region"
-              type="text"
               value={region}
               onChange={(e) => setRegion(e.target.value)}
               required
-              placeholder="e.g. Victoria, Australia"
               className="w-full border border-paper-dark rounded px-3 py-2 text-sm text-ink bg-white focus-visible:ring-2 focus-visible:ring-seal focus:outline-none"
-            />
+            >
+              <option value="">Select your region…</option>
+              {REGION_GROUPS.map(({ group, options }) => (
+                <optgroup key={group} label={group}>
+                  {options.map((opt) => (
+                    <option key={opt} value={opt}>{opt}</option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
             <p className="text-xs text-ink-faint">
-              Shown on your letters (city, country, or region).
+              Shown on your letters as the postmark origin.
             </p>
           </div>
 
@@ -172,6 +187,12 @@ export default function SignupPage() {
             Create account
           </Button>
         </form>
+
+        <p className="text-center text-sm text-ink-muted">
+          <Link href="/" className="underline hover:text-ink">
+            ← Back to homepage
+          </Link>
+        </p>
       </div>
     </main>
   );
