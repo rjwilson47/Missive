@@ -1,0 +1,444 @@
+// =============================================================================
+// prisma/schema.prisma
+// Missive — full database schema
+//
+// Setup:
+//   npx prisma generate    — regenerate the Prisma Client
+//   npx prisma db push     — push schema to the connected Supabase DB
+//
+// Notes:
+//   - All timestamps are stored in UTC (Prisma DateTime = UTC in Postgres)
+//   - Username uniqueness is case-insensitive (mode: insensitive)
+//   - MatchHistory always stores userId1 < userId2 (enforced in application
+//     code before insert) so the @@unique constraint covers both orderings
+//   - Partial index for deliverable letters is created via a raw migration
+//     (see comment at the bottom); Prisma doesn't natively support partial indexes
+// =============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// =============================================================================
+// Enums
+// =============================================================================
+
+/// Status of a letter through its lifecycle
+enum LetterStatus {
+  DRAFT          // In composer, not yet sent
+  IN_TRANSIT     // Sent, awaiting scheduled delivery
+  DELIVERED      // Delivered to recipient's UNOPENED folder
+  BLOCKED        // Silently blocked (sender is blocked by recipient)
+  UNDELIVERABLE  // Could not resolve recipient after 3 days
+}
+
+/// How the letter body is composed
+enum ContentType {
+  TYPED        // Plain text + italics via TipTap
+  HANDWRITTEN  // One or more photo uploads of handwritten pages
+  VOICE        // Future: voice recording (not implemented in MVP)
+}
+
+/// How the sender addressed the letter
+enum AddressingInputType {
+  USERNAME      // Sender knows the recipient's username directly
+  EMAIL         // Routed via registered email identifier
+  PHONE         // Routed via registered phone identifier
+  ADDRESS       // Routed via registered physical address identifier
+  PEN_PAL_MATCH // Matched via the pen pal feature
+}
+
+/// Type of user identifier used for discoverability routing
+enum IdentifierType {
+  EMAIL
+  PHONE
+  ADDRESS
+}
+
+/// Pen pal matching geographic preference
+enum PenPalMatchPreference {
+  SAME_REGION  // Only match with users in the same region
+  ANYWHERE     // Match with any opted-in user
+}
+
+/// System folder types (cannot be deleted; created automatically per user)
+enum SystemFolderType {
+  UNOPENED  // Delivered, not yet opened
+  OPENED    // Opened by recipient
+  DRAFTS    // All drafts for a user
+}
+
+// =============================================================================
+// User
+// =============================================================================
+
+/// Application user record.
+/// Authentication is handled by Supabase Auth; this table stores app-specific data.
+/// The Supabase auth user email is a synthetic UUID-based address never shown to users.
+model User {
+  id               String   @id @default(uuid()) @db.Uuid
+
+  /// Reference to Supabase auth.users (UUID from Supabase JWT sub claim)
+  supabase_user_id String   @unique @db.Uuid
+
+  /// Display name used for letter routing and UI; always lowercase, 3-20 chars
+  /// Case-insensitive unique constraint ensures "Alice" and "alice" can't both exist
+  username         String   @unique(map: "User_username_unique") @db.VarChar(20)
+
+  /// Freeform region description, e.g. "Victoria, AU" — no validation beyond required
+  region           String
+
+  /// IANA timezone string, e.g. "Australia/Melbourne"
+  /// Validated on write via isValidIanaTimezone() in lib/delivery.ts
+  timezone         String
+
+  // ---- Discoverability / privacy ----
+  /// If true, other users can route letters to this user via their registered email
+  discoverableByEmail    Boolean @default(false)
+  /// If true, other users can route letters to this user via their registered phone
+  discoverableByPhone    Boolean @default(false)
+  /// If true, other users can route letters to this user via their registered address
+  discoverableByAddress  Boolean @default(false)
+
+  // ---- Pen pal matching ----
+  /// Opt-in to the "Write to a stranger" pen pal pool
+  availableForPenPalMatching Boolean               @default(false)
+  /// Geographic preference for pen pal matching
+  penPalMatchPreference      PenPalMatchPreference @default(SAME_REGION)
+
+  // ---- Account deletion ----
+  /// Set when the user initiates account deletion; null = active account.
+  /// Account is actually deleted by a background job 30 days after this timestamp.
+  markedForDeletionAt DateTime? @db.Timestamptz
+
+  // ---- Recovery email (optional, not used for login) ----
+  /// Real email address for Supabase password reset — stored unverified.
+  /// When set, also updated as the Supabase auth email to enable reset emails.
+  recovery_email String? @db.VarChar(320)
+
+  created_at DateTime @default(now()) @db.Timestamptz
+  updated_at DateTime @updatedAt @db.Timestamptz
+
+  // ---- Relations ----
+  sentLetters      Letter[]         @relation("SentLetters")
+  receivedLetters  Letter[]         @relation("ReceivedLetters")
+  identifiers      UserIdentifier[]
+  folders          Folder[]
+  dailyQuotas      DailyQuota[]
+  blockListAsBlocker BlockList[]    @relation("Blocker")
+  blockListAsBlocked BlockList[]    @relation("Blocked")
+  reports          Report[]
+  matchHistoryAsUser1 MatchHistory[] @relation("MatchUser1")
+  matchHistoryAsUser2 MatchHistory[] @relation("MatchUser2")
+
+  @@map("User")
+}
+
+// =============================================================================
+// UserIdentifier
+// =============================================================================
+
+/// Optional identifiers (email, phone, address) that users register for routing.
+/// The `value_normalized` is normalised before storage:
+///   EMAIL:   lowercase + trimmed
+///   PHONE:   digits only (or E.164 if detectable)
+///   ADDRESS: lowercase, extra spaces removed
+model UserIdentifier {
+  id               String         @id @default(uuid()) @db.Uuid
+  userId           String         @db.Uuid
+  type             IdentifierType
+  /// Normalised value — never the raw input
+  value_normalized String
+
+  created_at DateTime @default(now()) @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// Composite unique: prevents the same normalised identifier being registered twice
+  /// regardless of type — e.g. two users can't both claim the same email
+  @@unique([type, value_normalized])
+  @@map("UserIdentifier")
+}
+
+// =============================================================================
+// Letter
+// =============================================================================
+
+/// Core letter model.
+/// A letter progresses: DRAFT → IN_TRANSIT → DELIVERED (or BLOCKED/UNDELIVERABLE).
+/// Once IN_TRANSIT, it is immutable and invisible to the sender.
+model Letter {
+  id              String       @id @default(uuid()) @db.Uuid
+
+  /// The user who composed and sent the letter
+  senderId        String       @db.Uuid
+  /// The intended recipient; null while DRAFT or if recipient is unresolved
+  recipientUserId String?      @db.Uuid
+
+  // ---- Addressing ----
+  /// How the sender specified the recipient (for routing + audit)
+  addressingInputType  AddressingInputType?
+  /// Raw input value (username is stored as-is; email/phone/address stored encrypted/hashed in V2)
+  addressingInputValue String?
+
+  // ---- Status & timestamps ----
+  status              LetterStatus @default(DRAFT)
+  sent_at             DateTime?    @db.Timestamptz
+  /// UTC timestamp when the cron job should deliver this letter (4PM in receiver TZ)
+  scheduled_delivery_at DateTime?  @db.Timestamptz
+  delivered_at        DateTime?    @db.Timestamptz
+  /// Set when the recipient tears open the envelope
+  opened_at           DateTime?    @db.Timestamptz
+
+  // ---- Threading ----
+  /// Links this letter to the one it replies to (for future v2 threading UI)
+  in_reply_to     String?      @db.Uuid
+
+  // ---- Content ----
+  contentType     ContentType
+  /// Chosen stationery font (e.g. "Crimson Text") — applies to whole typed letter
+  font_family     String?
+
+  /// ProseMirror/TipTap JSON for TYPED letters; null for HANDWRITTEN/VOICE
+  /// Max ~100KB after serialization (enforced server-side)
+  typed_body_json Json?
+
+  // ---- Sender context captured at send time ----
+  /// Snapshot of sender's region at the moment of sending (preserved even if user updates their region)
+  sender_region_at_send   String?
+  /// Snapshot of sender's IANA timezone at send time
+  sender_timezone_at_send String?
+
+  created_at DateTime @default(now()) @db.Timestamptz
+  updated_at DateTime @updatedAt @db.Timestamptz
+
+  // ---- Relations ----
+  sender    User  @relation("SentLetters", fields: [senderId], references: [id], onDelete: NoAction)
+  recipient User? @relation("ReceivedLetters", fields: [recipientUserId], references: [id], onDelete: Cascade)
+
+  /// The letter this is a reply to (self-referential FK)
+  inReplyToLetter Letter?  @relation("LetterReplies", fields: [in_reply_to], references: [id], onDelete: NoAction)
+  replies         Letter[] @relation("LetterReplies")
+
+  images       LetterImage[]
+  folderEntry  LetterFolder?
+  reports      Report[]
+
+  /// Partial index for deliverable letters — created via raw SQL migration.
+  /// See note at bottom of this file.
+  @@index([scheduled_delivery_at], map: "idx_letter_scheduled_delivery")
+  @@index([status], map: "idx_letter_status")
+  @@map("Letter")
+}
+
+// =============================================================================
+// LetterImage
+// =============================================================================
+
+/// An image attached to a letter (handwritten pages + photo attachments).
+/// Images are stored in Supabase Storage (private bucket).
+/// Signed URLs are generated server-side for authorised viewers only.
+model LetterImage {
+  id             String @id @default(uuid()) @db.Uuid
+  letterId       String @db.Uuid
+
+  /// Path within the Supabase Storage bucket (used to generate signed URLs)
+  storage_path   String
+  /// Path to the 300px-wide thumbnail in Supabase Storage
+  thumbnail_path String
+
+  mimeType       String  // e.g. "image/jpeg"
+  size_bytes     Int
+  width          Int
+  height         Int
+  /// Position in the letter's image sequence (0-indexed)
+  order_index    Int
+
+  created_at DateTime @default(now()) @db.Timestamptz
+
+  letter Letter @relation(fields: [letterId], references: [id], onDelete: Cascade)
+
+  @@map("LetterImage")
+}
+
+// =============================================================================
+// Folder
+// =============================================================================
+
+/// A mailbox folder belonging to a user.
+/// System folders (UNOPENED, OPENED, DRAFTS) are created automatically per user
+/// and cannot be deleted. Users can create up to 30 custom folders.
+model Folder {
+  id     String @id @default(uuid()) @db.Uuid
+  userId String @db.Uuid
+
+  /// Display name — max 30 characters; must be unique per user (case-insensitive)
+  name        String  @db.VarChar(30)
+  /// Null for custom folders; set for system folders
+  system_type SystemFolderType?
+
+  created_at DateTime @default(now()) @db.Timestamptz
+
+  user    User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  letters LetterFolder[]
+
+  /// Folder names must be unique per user (case-insensitive enforcement in app code)
+  @@unique([userId, name], map: "Folder_user_name_unique")
+  @@map("Folder")
+}
+
+// =============================================================================
+// LetterFolder
+// =============================================================================
+
+/// Maps a delivered letter to the folder it lives in.
+/// A letter can be in exactly ONE folder at a time (UNIQUE on letterId).
+/// The recipient moves letters between folders; the sender never sees this.
+model LetterFolder {
+  id       String @id @default(uuid()) @db.Uuid
+  letterId String @unique @db.Uuid  // UNIQUE: one folder per letter at a time
+  folderId String @db.Uuid
+
+  created_at DateTime @default(now()) @db.Timestamptz
+
+  letter Letter @relation(fields: [letterId], references: [id], onDelete: Cascade)
+  folder Folder @relation(fields: [folderId], references: [id], onDelete: Cascade)
+
+  @@map("LetterFolder")
+}
+
+// =============================================================================
+// BlockList
+// =============================================================================
+
+/// Records that `blockerUserId` has blocked `blockedUserId`.
+/// The cron job checks this table before delivering each letter.
+/// The blocked sender is never informed of the block.
+model BlockList {
+  id            String @id @default(uuid()) @db.Uuid
+  blockerUserId String @db.Uuid
+  blockedUserId String @db.Uuid
+
+  created_at DateTime @default(now()) @db.Timestamptz
+
+  blocker User @relation("Blocker", fields: [blockerUserId], references: [id], onDelete: Cascade)
+  blocked User @relation("Blocked", fields: [blockedUserId], references: [id], onDelete: Cascade)
+
+  /// Prevents duplicate block records for the same pair
+  @@unique([blockerUserId, blockedUserId])
+  @@map("BlockList")
+}
+
+// =============================================================================
+// Report
+// =============================================================================
+
+/// Stores a user's report of a letter for admin review.
+/// No admin UI is built in MVP; records are stored for future moderation tooling.
+model Report {
+  id             String  @id @default(uuid()) @db.Uuid
+  reporterUserId String  @db.Uuid
+  letterId       String  @db.Uuid
+  /// Optional free-text reason provided by the reporter
+  reason         String? @db.Text
+
+  created_at DateTime @default(now()) @db.Timestamptz
+
+  reporter User   @relation(fields: [reporterUserId], references: [id], onDelete: Cascade)
+  letter   Letter @relation(fields: [letterId], references: [id], onDelete: Cascade)
+
+  @@map("Report")
+}
+
+// =============================================================================
+// DailyQuota
+// =============================================================================
+
+/// Tracks how many letters a user has sent on a given day (in their timezone).
+/// Max 3 letters/day per sender. Quota resets at midnight in the user's timezone.
+/// Changing timezone does NOT retroactively alter past quota dates.
+model DailyQuota {
+  id         String @id @default(uuid()) @db.Uuid
+  userId     String @db.Uuid
+
+  /// The sender's local date at send time, formatted YYYY-MM-DD
+  /// (e.g. "2026-02-19" — derived from the sender's current timezone at the moment of send)
+  date       String @db.VarChar(10)
+
+  /// Number of letters sent on this date (max allowed: 3)
+  sent_count Int    @default(0)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// Composite unique: one record per user per day
+  @@unique([userId, date])
+  @@map("DailyQuota")
+}
+
+// =============================================================================
+// MatchHistory
+// =============================================================================
+
+/// Records pen pal matches to prevent the same pair being matched twice.
+/// IMPORTANT: always insert with userId1 < userId2 (alphabetically sorted UUIDs)
+/// so that the @@unique constraint covers both orderings with a single record.
+///
+/// Application code must sort before inserting:
+///   const [id1, id2] = [userAId, userBId].sort();
+model MatchHistory {
+  id      String @id @default(uuid()) @db.Uuid
+  /// Always the lexicographically smaller UUID of the two matched users
+  userId1 String @db.Uuid
+  /// Always the lexicographically larger UUID of the two matched users
+  userId2 String @db.Uuid
+
+  created_at DateTime @default(now()) @db.Timestamptz
+
+  user1 User @relation("MatchUser1", fields: [userId1], references: [id], onDelete: Cascade)
+  user2 User @relation("MatchUser2", fields: [userId2], references: [id], onDelete: Cascade)
+
+  /// Composite unique prevents the same pair from being matched more than once
+  @@unique([userId1, userId2])
+  @@map("MatchHistory")
+}
+
+// =============================================================================
+// AuditLog (optional but recommended per SPEC §9)
+// =============================================================================
+
+/// Stores key user actions for audit and abuse investigation.
+/// No UI in MVP — records are for future admin tooling only.
+model AuditLog {
+  id       String  @id @default(uuid()) @db.Uuid
+  userId   String  @db.Uuid
+  /// Action type, e.g. "letter_sent", "letter_delivered", "letter_opened",
+  /// "sender_blocked", "letter_reported", "account_deletion_initiated"
+  action   String
+  letterId String? @db.Uuid
+
+  created_at DateTime @default(now()) @db.Timestamptz
+
+  @@index([userId])
+  @@index([letterId])
+  @@map("AuditLog")
+}
+
+// =============================================================================
+// Partial index note
+// =============================================================================
+// Prisma does not natively support partial indexes.
+// After running `prisma db push` or generating a migration, run this SQL manually
+// (or add it to a custom migration file):
+//
+//   CREATE INDEX idx_deliverable_letters
+//   ON "Letter"(status, scheduled_delivery_at)
+//   WHERE status = 'IN_TRANSIT';
+//
+// This makes the cron job's "find letters ready to deliver" query efficient
+// by only indexing the subset of rows that are actually awaiting delivery.
+// =============================================================================
