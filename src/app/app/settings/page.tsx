@@ -3,11 +3,12 @@
  * Settings page (/app/settings).
  *
  * Sections:
- *   1. Profile     — username, region, timezone (explicit Save)
- *   2. Discoverability — email/phone/address toggles (auto-save on toggle)
- *   3. Pen Pal     — matching opt-in + region preference (auto-save on change)
- *   4. Identifiers — list + add email/phone/address; delete individual entries
- *   5. Account     — delete account (30-day grace) or cancel pending deletion
+ *   1. Profile          — username, region, timezone (explicit Save)
+ *   2. Discoverability  — email/phone/address toggles (auto-save on toggle)
+ *   3. Pen Pal          — matching opt-in + region preference (auto-save on change)
+ *   4. Password Recovery — recovery email for password reset (explicit Save)
+ *   5. Identifiers      — list + add email/phone/address; delete individual entries
+ *   6. Account          — delete account (30-day grace) or cancel pending deletion
  *
  * All API calls use the stored missive_token from localStorage.
  */
@@ -126,6 +127,12 @@ export default function SettingsPage() {
   const [addError, setAddError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
+  // ── Recovery email state ───────────────────────────────────────────────────
+  const [recoveryEmail, setRecoveryEmail] = useState("");
+  const [recoveryEmailSaving, setRecoveryEmailSaving] = useState(false);
+  const [recoveryEmailError, setRecoveryEmailError] = useState<string | null>(null);
+  const [recoveryEmailSuccess, setRecoveryEmailSuccess] = useState(false);
+
   // ── Account deletion state ─────────────────────────────────────────────────
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -150,6 +157,7 @@ export default function SettingsPage() {
         setUsername(userData.username);
         setRegion(userData.region);
         setTimezone(userData.timezone);
+        setRecoveryEmail(userData.recoveryEmail ?? "");
 
         if (idRes.ok) setIdentifiers(await idRes.json());
       } catch {
@@ -223,6 +231,40 @@ export default function SettingsPage() {
       setToggleSaving(null);
     }
   }, [user]);
+
+  // ── Save recovery email ────────────────────────────────────────────────────
+  const handleSaveRecoveryEmail = useCallback(async (e: React.FormEvent) => {
+    e.preventDefault();
+    setRecoveryEmailSaving(true);
+    setRecoveryEmailError(null);
+    setRecoveryEmailSuccess(false);
+
+    const token = localStorage.getItem(TOKEN_KEY);
+    try {
+      const res = await fetch("/api/me", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        // Send null to clear; send trimmed value to set
+        body: JSON.stringify({ recoveryEmail: recoveryEmail.trim() || null }),
+      });
+
+      const body = await res.json();
+      if (!res.ok) {
+        setRecoveryEmailError((body as { error?: string }).error ?? "Failed to save.");
+      } else {
+        setUser(body as AppUser);
+        setRecoveryEmailSuccess(true);
+        setTimeout(() => setRecoveryEmailSuccess(false), 3000);
+      }
+    } catch {
+      setRecoveryEmailError("Failed to save. Please try again.");
+    } finally {
+      setRecoveryEmailSaving(false);
+    }
+  }, [recoveryEmail]);
 
   // ── Add identifier ─────────────────────────────────────────────────────────
   const handleAddIdentifier = useCallback(async (e: React.FormEvent) => {
@@ -522,7 +564,71 @@ export default function SettingsPage() {
         </div>
       </Section>
 
-      {/* ── Section 4: Identifiers ─────────────────────────────────────────── */}
+      {/* ── Section 4: Password Recovery ───────────────────────────────────── */}
+      <Section title="Password Recovery">
+        <p className="text-sm text-ink-muted">
+          Add a recovery email so you can reset your password if you forget it.
+          This email is never used for login and never shown to other users.
+        </p>
+
+        <form onSubmit={handleSaveRecoveryEmail} className="space-y-3">
+          <div className="space-y-1">
+            <label htmlFor="recovery-email" className="block text-sm font-medium text-ink">
+              Recovery email
+            </label>
+            <input
+              id="recovery-email"
+              type="email"
+              value={recoveryEmail}
+              onChange={(e) => setRecoveryEmail(e.target.value)}
+              placeholder="your@email.com"
+              disabled={recoveryEmailSaving}
+              className="w-full border border-paper-dark rounded px-3 py-2 text-sm text-ink bg-white focus-visible:ring-2 focus-visible:ring-seal focus:outline-none disabled:opacity-60"
+              autoComplete="email"
+            />
+          </div>
+
+          {/* SPEC §2-A warning — shown when input has a value */}
+          {recoveryEmail.trim() !== "" && (
+            <p className="text-xs text-ink-muted bg-paper-warm border border-paper-dark rounded px-3 py-2">
+              ⚠️ Make sure this email is correct. We cannot verify it, and this is your only way to reset your password.
+            </p>
+          )}
+
+          {recoveryEmailError && (
+            <p className="text-red-600 text-sm" role="alert">{recoveryEmailError}</p>
+          )}
+          {recoveryEmailSuccess && (
+            <p className="text-green-600 text-sm" role="status">Recovery email saved.</p>
+          )}
+
+          <div className="flex gap-2">
+            <Button
+              type="submit"
+              variant="primary"
+              size="sm"
+              isLoading={recoveryEmailSaving}
+            >
+              Save
+            </Button>
+            {recoveryEmail.trim() !== "" && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                disabled={recoveryEmailSaving}
+                onClick={() => {
+                  setRecoveryEmail("");
+                }}
+              >
+                Clear
+              </Button>
+            )}
+          </div>
+        </form>
+      </Section>
+
+      {/* ── Section 5: Identifiers ─────────────────────────────────────────── */}
       <Section title="Routing Identifiers">
         <p className="text-sm text-ink-muted">
           Register your email, phone, or address so senders who know these can route
@@ -596,7 +702,7 @@ export default function SettingsPage() {
         )}
       </Section>
 
-      {/* ── Section 5: Account ─────────────────────────────────────────────── */}
+      {/* ── Section 6: Account ─────────────────────────────────────────────── */}
       <Section title="Account">
         {inDeletionGrace ? (
           <div className="space-y-3">

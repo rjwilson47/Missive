@@ -15,6 +15,7 @@
  *     discoverableByAddress?:      boolean
  *     availableForPenPalMatching?: boolean
  *     penPalMatchPreference?:      "SAME_REGION" | "ANYWHERE"
+ *     recoveryEmail?:              string | null  (email for password reset, or null to clear)
  *   }
  * PUT Response (200): Updated AppUser
  *
@@ -30,8 +31,8 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { getUserFromHeader } from "@/lib/supabase";
-import { getAppUser, validateUsername, normaliseUsername, prismaUserToAppUser } from "@/lib/auth";
+import { getUserFromHeader, supabaseAdmin } from "@/lib/supabase";
+import { getAppUser, validateUsername, normaliseUsername, prismaUserToAppUser, buildSyntheticEmail } from "@/lib/auth";
 import { isValidIanaTimezone } from "@/lib/delivery";
 import prisma from "@/lib/prisma";
 
@@ -159,18 +160,39 @@ export async function PUT(req: NextRequest): Promise<NextResponse> {
     data.penPalMatchPreference = raw;
   }
 
+  // recoveryEmail — stored UNVERIFIED (user's responsibility per SPEC §2-A).
+  // Pass null or empty string to clear; pass a non-empty string to set.
+  // FIX-9 (separate) will sync this to the Supabase auth email.
+  if ("recoveryEmail" in body) {
+    const raw = body.recoveryEmail;
+    if (raw === null || raw === "") {
+      // Clearing the recovery email
+      data.recovery_email = null;
+    } else {
+      if (typeof raw !== "string") {
+        return NextResponse.json({ error: "recoveryEmail must be a string or null." }, { status: 400 });
+      }
+      const trimmed = raw.trim();
+      // Basic structural validation: must contain "@" and a "." after it
+      if (!trimmed.includes("@") || !trimmed.split("@")[1]?.includes(".")) {
+        return NextResponse.json({ error: "recoveryEmail must be a valid email address." }, { status: 400 });
+      }
+      data.recovery_email = trimmed.toLowerCase();
+    }
+  }
+
   // No-op if nothing to update
   if (Object.keys(data).length === 0) {
     return NextResponse.json(me);
   }
 
   // ── Write to DB ───────────────────────────────────────────────────────────
+  let updated: Awaited<ReturnType<typeof prisma.user.update>>;
   try {
-    const updated = await prisma.user.update({
+    updated = await prisma.user.update({
       where: { id: me.id },
       data,
     });
-    return NextResponse.json(prismaUserToAppUser(updated));
   } catch (err: unknown) {
     // Prisma P2002 = unique constraint violation (username taken)
     if (
@@ -187,4 +209,29 @@ export async function PUT(req: NextRequest): Promise<NextResponse> {
     console.error("[PUT /api/me] Error:", err);
     return NextResponse.json({ error: "Server error." }, { status: 500 });
   }
+
+  // ── Sync recovery_email to Supabase auth (FIX-9, SPEC §2-A) ──────────────
+  // Keeps the Supabase auth email aligned with the app DB recovery_email so
+  // that Supabase's built-in password reset flow can send the email correctly.
+  // If recovery_email is cleared, restore the synthetic UUID email so login
+  // continues to work (login uses synthetic email, not recovery email).
+  if ("recovery_email" in data) {
+    const newAuthEmail =
+      updated.recovery_email !== null
+        ? updated.recovery_email
+        : buildSyntheticEmail(supabaseUser.id);
+
+    const { error: authUpdateError } = await supabaseAdmin.auth.admin.updateUserById(
+      supabaseUser.id,
+      { email: newAuthEmail }
+    );
+
+    if (authUpdateError) {
+      // DB is already updated; log the sync failure but don't roll back.
+      // The reset flow will simply fail until the user tries saving again.
+      console.error("[PUT /api/me] Supabase auth email sync failed:", authUpdateError.message);
+    }
+  }
+
+  return NextResponse.json(prismaUserToAppUser(updated));
 }

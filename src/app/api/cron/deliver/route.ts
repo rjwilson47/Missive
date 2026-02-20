@@ -7,18 +7,20 @@
  *
  * Execution order:
  *   1. Authenticate (verify CRON_SECRET).
- *   2. Mark UNDELIVERABLE: IN_TRANSIT + null recipient + sentAt > 3 days ago.
- *   3. Re-attempt routing: IN_TRANSIT + null recipient + sentAt <= 3 days ago.
+ *   2. Delete accounts past 30-day deletion grace period (markedForDeletionAt <= 30 days ago).
+ *      Cascades handle received letters and drafts. Sent letters remain (anonymised).
+ *   3. Mark UNDELIVERABLE: IN_TRANSIT + null recipient + sentAt > 3 days ago.
+ *   4. Re-attempt routing: IN_TRANSIT + null recipient + sentAt <= 3 days ago.
  *      Uses addressingInputType/Value to look up recipient; respects discoverability.
- *   4. Deliver due letters: IN_TRANSIT + recipientUserId set + scheduledDeliveryAt <= now.
+ *   5. Deliver due letters: IN_TRANSIT + recipientUserId set + scheduledDeliveryAt <= now.
  *      a. BlockList check → mark BLOCKED if blocked.
  *      b. Otherwise → mark DELIVERED, set deliveredAt, assign to UNOPENED folder.
- *   5. Return { delivered, blocked, undeliverable }.
+ *   6. Return { deleted, delivered, blocked, undeliverable }.
  *
  * Error strategy: errors are caught per-letter. A failure on one letter is logged
  * and does not abort the run. The letter will be retried on the next cron tick.
  *
- * Response (200): { delivered: number, blocked: number, undeliverable: number }
+ * Response (200): { deleted: number, delivered: number, blocked: number, undeliverable: number }
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -29,6 +31,9 @@ import { computeScheduledDelivery, isValidIanaTimezone } from "@/lib/delivery";
 
 /** Letters unroutable for longer than this are marked UNDELIVERABLE */
 const UNDELIVERABLE_AFTER_MS = 3 * 24 * 60 * 60 * 1000; // 3 days
+
+/** Accounts past this grace period after markedForDeletionAt are permanently deleted */
+const DELETION_GRACE_PERIOD_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
 // ===== Helpers =====
 
@@ -95,10 +100,39 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   const now = new Date();
   const undeliverableCutoff = new Date(now.getTime() - UNDELIVERABLE_AFTER_MS);
+  const deletionCutoff = new Date(now.getTime() - DELETION_GRACE_PERIOD_MS);
 
+  let deleted = 0;
   let undeliverable = 0;
   let delivered = 0;
   let blocked = 0;
+
+  // ===== Phase 0: Delete accounts past 30-day grace period =====
+  // Users who requested account deletion >= 30 days ago are permanently removed.
+  // FK cascades (ON DELETE CASCADE) handle received letters, drafts, folders,
+  // identifiers, and block list entries. Sent letters remain (senderId set to null
+  // or left orphaned per schema — they are never shown to the recipient's sender view).
+  try {
+    const toDelete = await prisma.user.findMany({
+      where: { markedForDeletionAt: { lte: deletionCutoff } },
+      select: { id: true },
+    });
+
+    for (const u of toDelete) {
+      try {
+        await prisma.user.delete({ where: { id: u.id } });
+        deleted++;
+      } catch (err) {
+        console.error(`[cron/deliver] Error deleting user ${u.id}:`, err);
+      }
+    }
+
+    if (deleted > 0) {
+      console.log(`[cron/deliver] Deleted ${deleted} account(s) past grace period.`);
+    }
+  } catch (err) {
+    console.error("[cron/deliver] Error fetching accounts for deletion:", err);
+  }
 
   // ===== Step 1: Mark letters UNDELIVERABLE =====
   // Letters that have been IN_TRANSIT with no resolved recipient for > 3 days
@@ -313,8 +347,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   }
 
   console.log(
-    `[cron/deliver] Run complete — delivered=${delivered}, blocked=${blocked}, undeliverable=${undeliverable}`
+    `[cron/deliver] Run complete — deleted=${deleted}, delivered=${delivered}, blocked=${blocked}, undeliverable=${undeliverable}`
   );
 
-  return NextResponse.json({ delivered, blocked, undeliverable });
+  return NextResponse.json({ deleted, delivered, blocked, undeliverable });
 }

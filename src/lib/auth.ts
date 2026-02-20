@@ -310,6 +310,7 @@ export function prismaUserToAppUser(dbUser: any): AppUser {
     availableForPenPalMatching: dbUser.availableForPenPalMatching,
     penPalMatchPreference: dbUser.penPalMatchPreference,
     markedForDeletionAt: dbUser.markedForDeletionAt?.toISOString() ?? null,
+    recoveryEmail: dbUser.recovery_email ?? null,
     createdAt: dbUser.created_at?.toISOString() ?? new Date().toISOString(),
   };
 }

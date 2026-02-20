@@ -4,16 +4,14 @@
 
 ## 🎯 Next Session Starts Here
 <!-- Claude overwrites this section at the end of every session -->
-> **Remediation Session 1 COMPLETE. Resume with FIX-7.**
+> **Remediation Session 2 in progress. FIX-7 through FIX-10 done. Resume with FIX-11.**
 >
-> FIX-1 through FIX-6 are done. See Remediation Order section below for full list.
+> FIX-1 through FIX-10 are done. See Remediation Order section below for full list.
 > Read AUDIT.md for detailed description of each remaining fix.
 >
-> **Next fix: FIX-7 — Settings page recovery email field**
-> - Add recovery email input to `src/app/app/settings/page.tsx`
-> - Add `recovery_email` field to `PUT /api/me` handler in `src/app/api/me/route.ts`
-> - Warning text: "Make sure this email is correct. We cannot verify it, and this is your only way to reset your password."
-> - Follow immediately with FIX-8 (forgot password) and FIX-9 (Supabase sync) in same session if time allows.
+> **Next fix: FIX-11 — Handwritten image server-side delete on removal**
+> - `src/components/compose/WriteStep.tsx` — when user removes an image, call DELETE /api/letters/[id]/images/[imageId]
+> - New file: `src/app/api/letters/[id]/images/[imageId]/route.ts` — DELETE handler (auth + DRAFT ownership + delete LetterImage row + delete from Supabase Storage)
 >
 > **Work strictly in Remediation Order. Update "In Progress" before each fix. Tick off after each fix.**
 
@@ -173,7 +171,7 @@
 ## 🔄 In Progress
 <!-- Claude updates this BEFORE starting each file.
      Clear it when the file moves to Completed. -->
-(none — Session 6 complete. MVP is fully implemented.)
+FIX-11 · WriteStep.tsx + DELETE /api/letters/[id]/images/[imageId] — handwritten image server-side delete on removal
 
 ---
 
@@ -480,10 +478,10 @@
 - [x] FIX-4 · LetterEditor.tsx — italic toolbar button + aria-pressed
 - [x] FIX-5 · ReviewStep — pass real scheduledDeliveryAt (POST /api/letters now resolves recipient + computes estimate)
 - [x] FIX-6 · isPenPalEligible — read from GET /api/me (was hardcoded true)
-- [ ] FIX-7 · Settings — recovery email UI + PUT /api/me support
-- [ ] FIX-8 · Login — /forgot-password page + API route
-- [ ] FIX-9 · Recovery email → Supabase auth email sync in PUT /api/me
-- [ ] FIX-10 · Cron — 30-day account deletion phase
+- [x] FIX-7 · Settings — recovery email UI + PUT /api/me support
+- [x] FIX-8 · Login — /forgot-password page + API route
+- [x] FIX-9 · Recovery email → Supabase auth email sync in PUT /api/me
+- [x] FIX-10 · Cron — 30-day account deletion phase
 
 ### 🟡 Medium Priority
 - [ ] Handwritten image server-side delete on removal
@@ -519,3 +517,14 @@
 - **FIX-6** · `src/app/app/compose/page.tsx` — `isPenPalEligible` now fetched from `GET /api/me` on mount (was hardcoded `true`).
 
 **Next:** FIX-7 — Settings recovery email UI + PUT /api/me
+
+### Remediation Session 2
+**Status:** In Progress — FIX-7 through FIX-10 done
+
+**What was done:**
+- **FIX-7** · `src/types/index.ts` — Added `recoveryEmail: string | null` to `AppUser` interface. `src/lib/auth.ts` — `prismaUserToAppUser()` now maps `dbUser.recovery_email → recoveryEmail`. `src/app/api/me/route.ts` — PUT handler accepts `recoveryEmail?: string | null`, validates email format, maps to `recovery_email` Prisma field, accepts `null`/`""` to clear. `src/app/app/settings/page.tsx` — added "Password Recovery" section (section 4 of 6): email input pre-populated from `userData.recoveryEmail`, warning text about unverified email, Save + Clear buttons.
+- **FIX-8** · `src/app/api/auth/forgot-password/route.ts` (new) — POST handler: rate-limited (5/15min), anti-enumeration (returns `{ status: "sent" }` when username not found), `{ status: "no_recovery_email" }` when account has no recovery email (SPEC §2-A explicit requirement), calls `supabaseAdmin.auth.resetPasswordForEmail()` otherwise. `src/app/forgot-password/page.tsx` (new) — public page: username form, "sent"/"no_recovery_email"/error states. `src/app/login/page.tsx` — added "Forgot password?" link to `/forgot-password`.
+- **FIX-9** · `src/app/api/me/route.ts` — After successful Prisma `user.update`, syncs Supabase auth email: sets to `recovery_email` value if non-null, or restores synthetic UUID email if cleared (so login continues to work). Sync failures logged but do not roll back the DB update.
+- **FIX-10** · `src/app/api/cron/deliver/route.ts` — Added Phase 0 before Step 1: finds users where `markedForDeletionAt <= now - 30 days`, deletes each with `prisma.user.delete()` (cascades handle received letters, drafts, folders, identifiers, block lists). Added `DELETION_GRACE_PERIOD_MS` constant (30 days). Added `deleted` counter to response: `{ deleted, delivered, blocked, undeliverable }`. Per-user error handling (log and continue).
+
+**Next:** FIX-11 — Handwritten image server-side delete on removal

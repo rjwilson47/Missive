@@ -43,6 +43,8 @@ export interface AppUser {
   availableForPenPalMatching: boolean;
   penPalMatchPreference: PenPalMatchPreference;
   markedForDeletionAt: string | null; // ISO string or null
+  /** Recovery email for password reset (UNVERIFIED; never used for login). */
+  recoveryEmail: string | null;
   createdAt: string;
 }
 
