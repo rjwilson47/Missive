@@ -4,15 +4,15 @@
 
 ## 🎯 Next Session Starts Here
 <!-- Claude overwrites this section at the end of every session -->
-> **Remediation Session 2 in progress. FIX-7 through FIX-11 done. Resume with FIX-12.**
+> **Remediation Session 2 in progress. FIX-7 through FIX-12 done. Resume with FIX-13.**
 >
-> FIX-1 through FIX-11 are done. See Remediation Order section below for full list.
+> FIX-1 through FIX-12 are done. See Remediation Order section below for full list.
 > Read AUDIT.md for detailed description of each remaining fix.
 >
-> **Next fix: FIX-12 — Integration tests (7 scenarios)**
-> - Create `src/__tests__/integration/` with mocked Prisma and Supabase
-> - Scenarios: quota enforcement, cron delivery, blocking, account deletion, cancel deletion, reply draft, pen pal match deduplication
-> - See AUDIT.md FIX-12 for the full scenario list
+> **Next fix: FIX-13 — Verify Folder systemType field name in letters/route.ts GET**
+> - Check `src/app/api/letters/route.ts` line ~84: `where: { userId: me.id, systemType: folder }`
+> - If the Prisma schema uses `system_type`, this query silently returns wrong results
+> - Verify and fix if needed
 >
 > **Work strictly in Remediation Order. Update "In Progress" before each fix. Tick off after each fix.**
 
@@ -172,7 +172,7 @@
 ## 🔄 In Progress
 <!-- Claude updates this BEFORE starting each file.
      Clear it when the file moves to Completed. -->
-FIX-12 · src/__tests__/integration/ — 7 integration test scenarios
+FIX-13 · src/app/api/letters/route.ts — verify Folder systemType field name in GET query
 
 ---
 
@@ -486,7 +486,7 @@ FIX-12 · src/__tests__/integration/ — 7 integration test scenarios
 ### 🟡 Medium Priority
 - [x] FIX-11 · Handwritten image server-side delete on removal
 - [ ] Client-side character counter (50,000 char limit)
-- [ ] Integration tests (7 scenarios from SPEC §12)
+- [x] FIX-12 · Integration tests (7 scenarios from SPEC §12)
 
 ### 🟢 Low Priority
 - [ ] Authorization tests
@@ -519,7 +519,7 @@ FIX-12 · src/__tests__/integration/ — 7 integration test scenarios
 **Next:** FIX-7 — Settings recovery email UI + PUT /api/me
 
 ### Remediation Session 2
-**Status:** In Progress — FIX-7 through FIX-11 done
+**Status:** In Progress — FIX-7 through FIX-12 done
 
 **What was done:**
 - **FIX-7** · `src/types/index.ts` — Added `recoveryEmail: string | null` to `AppUser` interface. `src/lib/auth.ts` — `prismaUserToAppUser()` now maps `dbUser.recovery_email → recoveryEmail`. `src/app/api/me/route.ts` — PUT handler accepts `recoveryEmail?: string | null`, validates email format, maps to `recovery_email` Prisma field, accepts `null`/`""` to clear. `src/app/app/settings/page.tsx` — added "Password Recovery" section (section 4 of 6): email input pre-populated from `userData.recoveryEmail`, warning text about unverified email, Save + Clear buttons.
@@ -529,4 +529,6 @@ FIX-12 · src/__tests__/integration/ — 7 integration test scenarios
 
 - **FIX-11** · `src/app/api/letters/[id]/images/[imageId]/route.ts` (new) — DELETE handler: JWT auth, DRAFT ownership check via joined query, delete both storage objects (full-res + thumbnail, best-effort log on failure), delete LetterImage DB row, return 204. `src/components/compose/WriteStep.tsx` — `handleRemove` now async: calls DELETE endpoint first (treats 404 as success), only removes from state on success, shows error via `uploadError` state on failure; added `isRemoving` state to disable Remove buttons during deletion.
 
-**Next:** FIX-12 — Integration tests (7 scenarios)
+- **FIX-12** · `src/__tests__/integration/api.test.ts` (new) — 15 integration tests across 7 scenarios: quota enforcement (3 tests), cron delivery (1), cron blocking (1), account deletion Phase 0 (2), cancel deletion (2), reply draft (3), pen pal deduplication (3). Mocks Prisma, Supabase, auth helpers, and rate limiters using `jest.resetAllMocks()` to prevent mock queue contamination across tests. All 15 tests + 10 existing delivery unit tests pass.
+
+**Next:** FIX-13 — Verify Folder systemType field name in letters/route.ts
