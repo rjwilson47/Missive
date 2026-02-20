@@ -223,7 +223,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         const identifier = await prisma.userIdentifier.findFirst({
           where: {
             type: inputType as "EMAIL" | "PHONE" | "ADDRESS",
-            valueNormalized: normalised,
+            value_normalized: normalised,
             user: { [discoverabilityField]: true },
           },
           select: {
