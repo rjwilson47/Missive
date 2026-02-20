@@ -90,12 +90,14 @@ export const sendLimiter = makeLazy(() =>
 
 /**
  * Rate limiter for login and signup endpoints.
- * Limit: 5 requests per 15 minutes per IP address.
+ * Limit: 20 requests per 15 minutes per IP address.
+ * Generous enough for real users (typos, multiple devices) while
+ * still blocking brute-force attacks.
  */
 export const authLimiter = makeLazy(() =>
   new Ratelimit({
     redis: getRedis(),
-    limiter: Ratelimit.slidingWindow(5, "15 m"),
+    limiter: Ratelimit.slidingWindow(20, "15 m"),
     prefix: "rl:auth",
   })
 );
