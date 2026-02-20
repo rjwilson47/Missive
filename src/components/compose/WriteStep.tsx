@@ -23,6 +23,28 @@ import type { ContentType, StationeryFont, LetterImageShape } from "@/types";
 const TOKEN_KEY = "missive_token";
 const AUTOSAVE_DELAY_MS = 2500;
 const ACCEPTED_IMAGE_TYPES = "image/jpeg,image/png,image/heic,image/heif";
+const MAX_CHARS = 50_000;
+
+// ===== Helpers =====
+
+/**
+ * Recursively extracts all plain text from a ProseMirror JSON document.
+ * Used to count characters client-side for the 50,000-character limit.
+ *
+ * @param node - ProseMirror JSON doc or any descendant node
+ * @returns Concatenated plain text string
+ */
+function extractTextFromProseMirror(node: unknown): string {
+  if (typeof node !== "object" || node === null) return "";
+  const n = node as Record<string, unknown>;
+  // Text leaf node
+  if (n.type === "text" && typeof n.text === "string") return n.text;
+  // Any node with children
+  if (Array.isArray(n.content)) {
+    return (n.content as unknown[]).map(extractTextFromProseMirror).join("");
+  }
+  return "";
+}
 
 const STATIONERY_FONTS: StationeryFont[] = [
   "Crimson Text",
@@ -51,6 +73,7 @@ function TypedWriter({
   const [font, setFont] = useState<StationeryFont>("Crimson Text");
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [charCount, setCharCount] = useState(0);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingContentRef = useRef<Record<string, unknown> | null>(null);
 
@@ -81,6 +104,8 @@ function TypedWriter({
   const handleChange = useCallback(
     (content: Record<string, unknown>) => {
       pendingContentRef.current = content;
+      // Update char count on every keystroke for the button disabled state
+      setCharCount(extractTextFromProseMirror(content).length);
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
       saveTimerRef.current = setTimeout(() => {
         if (pendingContentRef.current) {
@@ -142,7 +167,13 @@ function TypedWriter({
       {/* Editor */}
       <LetterEditor fontFamily={font} onChange={handleChange} />
 
-      <Button variant="primary" size="md" onClick={onNext}>
+      <Button
+        variant="primary"
+        size="md"
+        onClick={onNext}
+        disabled={charCount > MAX_CHARS}
+        aria-disabled={charCount > MAX_CHARS}
+      >
         Continue to review
       </Button>
     </div>

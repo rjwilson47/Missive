@@ -62,8 +62,8 @@ export async function POST(
   }
 
   // ── Find recipient's OPENED system folder ──────────────────────────────────
-  // System folders are created during user signup by signupUser() in lib/auth.ts.
-  // If missing for any reason, create it defensively.
+  // System folders are created lazily on first use rather than at signup.
+  // Create here if it doesn't exist yet.
   let openedFolder = await prisma.folder.findFirst({
     where: { userId: me.id, system_type: "OPENED" },
     select: { id: true },

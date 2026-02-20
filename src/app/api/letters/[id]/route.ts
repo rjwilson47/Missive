@@ -23,6 +23,26 @@ import type { LetterDetail, LetterImageShape } from "@/types";
 
 const UNAUTHORIZED = NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+/** Maximum characters allowed in a typed letter body (SPEC §2-B). */
+const MAX_TYPED_CHARS = 50_000;
+
+/**
+ * Recursively extracts plain text from a ProseMirror JSON document.
+ * Used server-side to enforce the 50,000-character limit.
+ *
+ * @param node - ProseMirror JSON doc or any descendant node
+ * @returns Concatenated plain text string
+ */
+function extractPlainText(node: unknown): string {
+  if (typeof node !== "object" || node === null) return "";
+  const n = node as Record<string, unknown>;
+  if (n.type === "text" && typeof n.text === "string") return n.text;
+  if (Array.isArray(n.content)) {
+    return (n.content as unknown[]).map(extractPlainText).join("");
+  }
+  return "";
+}
+
 const VALID_ADDRESSING_TYPES = [
   "USERNAME",
   "EMAIL",
@@ -209,6 +229,16 @@ export async function PUT(
     // Accept null (clear body) or an object (ProseMirror JSON)
     if (typedBodyJson !== null && typeof typedBodyJson !== "object") {
       return NextResponse.json({ error: "typedBodyJson must be an object or null." }, { status: 400 });
+    }
+    // Server-side character limit (SPEC §2-B): enforce even if client-side check is bypassed
+    if (typedBodyJson !== null) {
+      const charCount = extractPlainText(typedBodyJson).length;
+      if (charCount > MAX_TYPED_CHARS) {
+        return NextResponse.json(
+          { error: "Letter is too long. Maximum 50,000 characters." },
+          { status: 400 }
+        );
+      }
     }
     data.typed_body_json = typedBodyJson ?? null;
   }
