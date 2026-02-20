@@ -4,10 +4,9 @@
 
 ## 🎯 Next Session Starts Here
 <!-- Claude overwrites this section at the end of every session -->
-> **Branding session in progress. CHANGES 1–8 complete. CHANGE 9 requires confirmation.**
+> **All 9 changes complete. Session done.**
 >
-> Working through 9 user-requested changes on branch `claude/explore-project-structure-bYDYo`.
-> CHANGES 1–8 done. CHANGE 9 pending analysis + confirmation.
+> All requested changes (CHANGE 1–9) implemented and pushed to `claude/explore-project-structure-bYDYo`.
 
 ### Change Log (this session)
 - **CHANGE 1 ✅** — Renamed all user-facing "Missive" strings to "Penned" across:
@@ -24,7 +23,13 @@
 - **CHANGE 6 ✅** — Homepage CTA: "Start writing" → "Create Account" in `src/app/page.tsx`.
 - **CHANGE 7 ✅** — Added "← Back to homepage" link (styled as subtle underline text) below the form on both `signup/page.tsx` and `login/page.tsx`.
 - **CHANGE 8 ✅** — Region field replaced with grouped sub-regional dropdown (17 options across 5 continent groups) in `signup/page.tsx` and `settings/page.tsx`. `REGION_GROUPS` constant defined inline in each file. Pen pal SAME_REGION matching now reliable (exact string match on consistent values). Postmarks read naturally ("Sent from Western Europe"). No schema/API changes needed.
-- **CHANGE 9** — Pending analysis + confirmation
+- **CHANGE 9 ✅** — Welcome letter on signup via system user approach. Added to `src/lib/auth.ts`:
+  - `SYSTEM_USER_SUPABASE_UUID` constant (reserved fake UUID `00000000-0000-0000-0000-000000000001`)
+  - `getOrCreateSystemUser()` — idempotent; creates `penned` user in DB on first signup
+  - `buildWelcomeLetterJson(username)` — TipTap/ProseMirror JSON, personalised with username
+  - `createWelcomeLetter(newUserId, username)` — creates UNOPENED folder if needed, inserts letter directly as DELIVERED + assigns to folder
+  - Called in `signupUser()` as step 5b (best-effort, non-fatal — failure is logged, signup proceeds)
+  - Letter: contentType=TYPED, font=Crimson Text, status=DELIVERED, sender_region="Penned HQ"
 
 ---
 ## 📌 Build Order

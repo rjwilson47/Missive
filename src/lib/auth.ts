@@ -27,6 +27,13 @@ import type { AppUser } from "@/types";
 /** Domain used for synthetic Supabase auth emails. Never shown to users. */
 const SYNTHETIC_EMAIL_DOMAIN = "users.mailbox.invalid";
 
+/**
+ * Stable, reserved supabase_user_id for the "penned" system account.
+ * This UUID is never a real Supabase auth user — it is only used to satisfy
+ * the non-nullable senderId FK on Letter for system-generated letters.
+ */
+const SYSTEM_USER_SUPABASE_UUID = "00000000-0000-0000-0000-000000000001";
+
 // ===== Helpers =====
 
 /**
@@ -194,6 +201,13 @@ export async function signupUser(input: SignupInput): Promise<SignupResult> {
     throw new Error("Failed to create account. Please try again.");
   }
 
+  // --- Step 5b: Create welcome letter (best-effort — non-fatal) ---
+  try {
+    await createWelcomeLetter(appUser.id, username);
+  } catch (welcomeErr) {
+    console.error("[auth] Failed to create welcome letter for new user:", welcomeErr);
+  }
+
   // --- Step 6: Sign in to get session token ---
   const { data: signInData, error: signInError } =
     await supabaseAdmin.auth.signInWithPassword({
@@ -313,6 +327,110 @@ export function prismaUserToAppUser(dbUser: any): AppUser {
     recoveryEmail: dbUser.recovery_email ?? null,
     createdAt: dbUser.created_at?.toISOString() ?? new Date().toISOString(),
   };
+}
+
+// ===== Welcome letter =====
+
+/**
+ * Gets or creates the "penned" system user that sends welcome letters.
+ * Uses a stable reserved supabase_user_id UUID that is never a real auth user.
+ */
+async function getOrCreateSystemUser(): Promise<{ id: string }> {
+  const existing = await prisma.user.findUnique({
+    where: { supabase_user_id: SYSTEM_USER_SUPABASE_UUID },
+    select: { id: true },
+  });
+  if (existing) return existing;
+
+  return prisma.user.create({
+    data: {
+      supabase_user_id: SYSTEM_USER_SUPABASE_UUID,
+      username: "penned",
+      region: "Penned HQ",
+      timezone: "UTC",
+    },
+    select: { id: true },
+  });
+}
+
+/**
+ * Builds the TipTap/ProseMirror JSON body for the welcome letter.
+ * Uses Document + Paragraph + Text nodes (matching the editor's extension set).
+ *
+ * @param username - The new user's username for personalisation
+ */
+function buildWelcomeLetterJson(username: string): Record<string, unknown> {
+  const p = (text: string) => ({
+    type: "paragraph",
+    content: [{ type: "text", text }],
+  });
+  const blank = () => ({ type: "paragraph" });
+
+  return {
+    type: "doc",
+    content: [
+      p(`Hi ${username}, welcome to Penned.`),
+      blank(),
+      p("This is your first letter — we wanted to show you what receiving a letter feels like before you send your first one."),
+      blank(),
+      p("Penned is about slow, thoughtful correspondence. Letters take at least 24 business hours to arrive, delivered at 4:00 PM in your timezone — just like real post."),
+      blank(),
+      p("We hope it brings back the emotion of writing a letter again and the anticipation of receiving a letter in the mail."),
+      blank(),
+      p("A few things worth doing in Settings:"),
+      p("— Add a recovery email so you can reset your password if needed."),
+      p("— Add your email, phone, or address so others can find you and send you letters."),
+      p("— Turn on pen pal matching if you'd like to write to a stranger."),
+      blank(),
+      p("Happy writing."),
+    ],
+  };
+}
+
+/**
+ * Creates a pre-delivered welcome letter in the new user's UNOPENED folder.
+ * Called as a best-effort step during signup — errors are caught by the caller.
+ *
+ * @param newUserId  - The newly created app User ID
+ * @param newUsername - The new user's username for personalisation
+ */
+async function createWelcomeLetter(newUserId: string, newUsername: string): Promise<void> {
+  // Get or create the system sender and the recipient's UNOPENED folder in parallel
+  const [systemUser, unopenedFolder] = await Promise.all([
+    getOrCreateSystemUser(),
+    prisma.folder.findFirst({
+      where: { userId: newUserId, system_type: "UNOPENED" },
+      select: { id: true },
+    }).then((existing) => existing ?? prisma.folder.create({
+      data: { userId: newUserId, name: "Unopened", system_type: "UNOPENED" },
+      select: { id: true },
+    })),
+  ]);
+
+  const now = new Date();
+
+  // Insert letter directly as DELIVERED — no cron needed
+  const letter = await prisma.letter.create({
+    data: {
+      senderId: systemUser.id,
+      recipientUserId: newUserId,
+      contentType: "TYPED",
+      status: "DELIVERED",
+      font_family: "Crimson Text",
+      typed_body_json: buildWelcomeLetterJson(newUsername),
+      sent_at: now,
+      scheduled_delivery_at: now,
+      delivered_at: now,
+      sender_region_at_send: "Penned HQ",
+      sender_timezone_at_send: "UTC",
+    },
+    select: { id: true },
+  });
+
+  // Assign to the UNOPENED folder
+  await prisma.letterFolder.create({
+    data: { letterId: letter.id, folderId: unopenedFolder.id },
+  });
 }
 
 /**
