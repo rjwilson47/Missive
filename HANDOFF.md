@@ -4,16 +4,13 @@
 
 ## 🎯 Next Session Starts Here
 <!-- Claude overwrites this section at the end of every session -->
-> **Homepage copy refinements complete (4 changes). Session done.**
+> **Homepage spacing + tagline line-break changes complete. Session done.**
 >
-> All 4 requested text changes applied to `src/app/page.tsx` and pushed to `claude/explore-project-structure-bYDYo`.
-> No functionality, styling, or layout changes were made.
+> 2 changes applied to `src/app/page.tsx` and pushed to `claude/explore-project-structure-bYDYo`.
 
-### Change Log (this session — homepage copy refinements)
-- **CHANGE 1 ✅** — Removed hero paragraph "Every letter is typed or penned by you, and postmarked for delivery - just like the post used to be."
-- **CHANGE 2 ✅** — Hero tagline updated: added "Just like the post used to be." after "Deliberately personal."
-- **CHANGE 3 ✅** — Removed "No junk mail" standalone section entirely.
-- **CHANGE 4 ✅** — Added third paragraph to "In a world of instant messages…" section: "No promotions. No newsletters. No spam…"
+### Change Log (this session — homepage spacing + tagline)
+- **CHANGE 1 ✅** — Reduced padding on all sub-sections by one Tailwind step (`py-16`→`py-12`, `py-12`→`py-10`). Hero section (`pt-12 pb-8`) left untouched. Affected: "In a world of…", "How it works", "Looking for someone?", "Write to a stranger.", "A few ground rules".
+- **CHANGE 2 ✅** — Hero tagline split into 3 explicit lines via two `<br />` tags: "Write letters…" / "Intentionally slow…" / "Just like the post used to be." First break changed from `hidden sm:block` to always-on.
 
 ### Change Log (previous session)
 - **CHANGE 1 ✅** — Renamed all user-facing "Missive" strings to "Penned" across:

@@ -36,8 +36,10 @@ export default function LandingPage() {
           </p>
           <p className="text-ink-muted text-lg sm:text-xl leading-relaxed max-w-md mx-auto">
             Write letters. Seal them. Wait for delivery.
-            <br className="hidden sm:block" />
-            Intentionally slow. Deliberately personal. Just like the post used to be.
+            <br />
+            Intentionally slow. Deliberately personal.
+            <br />
+            Just like the post used to be.
           </p>
         </div>
 
@@ -58,7 +60,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── The idea ──────────────────────────────────────────────────────── */}
-      <section className="max-w-2xl mx-auto px-6 py-16 space-y-6 border-t border-paper-dark">
+      <section className="max-w-2xl mx-auto px-6 py-12 space-y-6 border-t border-paper-dark">
         <h2 className="font-serif text-2xl text-ink">In a world of instant messages…</h2>
         <p className="text-ink-muted leading-relaxed">
           Penned brings back the art of the letter. You write. You seal it.
@@ -78,7 +80,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── How it works ──────────────────────────────────────────────────── */}
-      <section className="max-w-2xl mx-auto px-6 py-12 space-y-10 border-t border-paper-dark">
+      <section className="max-w-2xl mx-auto px-6 py-10 space-y-10 border-t border-paper-dark">
         <h2 className="font-serif text-2xl text-ink">How it works</h2>
         <div className="grid sm:grid-cols-2 gap-8">
           <Feature
@@ -105,7 +107,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── Looking for someone ───────────────────────────────────────────── */}
-      <section className="max-w-2xl mx-auto px-6 py-16 space-y-6 border-t border-paper-dark">
+      <section className="max-w-2xl mx-auto px-6 py-12 space-y-6 border-t border-paper-dark">
         <h2 className="font-serif text-2xl text-ink">Looking for someone?</h2>
         <p className="text-ink-muted leading-relaxed">
           People can link their email, phone, or mailing address to their
@@ -116,7 +118,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── Write to a stranger ───────────────────────────────────────────── */}
-      <section className="max-w-2xl mx-auto px-6 py-16 space-y-6 border-t border-paper-dark">
+      <section className="max-w-2xl mx-auto px-6 py-12 space-y-6 border-t border-paper-dark">
         <h2 className="font-serif text-2xl text-ink">Write to a stranger.</h2>
         <p className="text-ink-muted leading-relaxed">
           Don&rsquo;t know who to write to? We&rsquo;ll match you with someone looking
@@ -125,7 +127,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── Rules ─────────────────────────────────────────────────────────── */}
-      <section className="max-w-2xl mx-auto px-6 py-12 space-y-6 border-t border-paper-dark">
+      <section className="max-w-2xl mx-auto px-6 py-10 space-y-6 border-t border-paper-dark">
         <h2 className="font-serif text-2xl text-ink">A few ground rules</h2>
         <ul className="space-y-3 text-ink-muted text-sm leading-relaxed list-none">
           {[
