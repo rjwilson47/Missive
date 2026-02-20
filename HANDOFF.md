@@ -4,11 +4,14 @@
 
 ## 🎯 Next Session Starts Here
 <!-- Claude overwrites this section at the end of every session -->
-> **Welcome letter wording update complete. Session done.**
+> **Wax seal image added to homepage hero. Session done.**
 >
-> 1 change applied to `src/lib/auth.ts` (`buildWelcomeLetterJson`) and pushed to `claude/explore-project-structure-bYDYo`.
+> 1 change applied to `src/app/page.tsx` and pushed to `claude/explore-project-structure-bYDYo`.
 
-### Change Log (this session — welcome letter wording)
+### Change Log (this session — homepage wax seal image)
+- **CHANGE 1 ✅** — `src/app/page.tsx`: inserted `<img src="/images/wax-seal-image.svg">` between the hero tagline block and the CTA buttons. Wrapped in a `flex justify-center my-6` div. Image styled `w-full max-w-[300px] h-auto` — full-width on mobile, capped at 300 px on desktop, aspect ratio preserved.
+
+### Change Log (previous session — welcome letter wording)
 - **CHANGE 1 ✅** — `src/lib/auth.ts` · `buildWelcomeLetterJson()`: replaced entire welcome letter body with new wording. Specific diffs:
   - Opening line `"Hi ${username}, welcome to Penned."` → split into `"Hi ${username},"` (blank line) `"Welcome to Penned."`
   - `"just like real post."` → `"just like the real post."`
