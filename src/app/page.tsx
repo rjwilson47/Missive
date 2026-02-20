@@ -37,11 +37,7 @@ export default function LandingPage() {
           <p className="text-ink-muted text-lg sm:text-xl leading-relaxed max-w-md mx-auto">
             Write letters. Seal them. Wait for delivery.
             <br className="hidden sm:block" />
-            Intentionally slow. Deliberately personal.
-          </p>
-          <p className="text-ink-faint text-sm leading-relaxed max-w-sm mx-auto">
-            Every letter is typed or penned by you, and postmarked for
-            delivery - just like the post used to be.
+            Intentionally slow. Deliberately personal. Just like the post used to be.
           </p>
         </div>
 
@@ -74,11 +70,6 @@ export default function LandingPage() {
           quiet anticipation of a letter on its way, and the joy of tearing
           open an envelope that's been waiting in your mailbox.
         </p>
-      </section>
-
-      {/* ── No junk mail ──────────────────────────────────────────────────── */}
-      <section className="max-w-2xl mx-auto px-6 py-16 space-y-6 border-t border-paper-dark">
-        <h2 className="font-serif text-2xl text-ink">No junk mail</h2>
         <p className="text-ink-muted leading-relaxed">
           No promotions. No newsletters. No spam. No algorithmic feed fighting
           for your attention. Your mailbox only has letters from people who sat
