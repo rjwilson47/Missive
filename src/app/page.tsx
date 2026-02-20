@@ -43,6 +43,14 @@ export default function LandingPage() {
           </p>
         </div>
 
+        <div className="flex justify-center my-6">
+          <img
+            src="/images/wax-seal-image.svg"
+            alt="Penned wax seal"
+            className="w-full max-w-[300px] h-auto"
+          />
+        </div>
+
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Link
             href="/signup"
