@@ -1,8 +1,12 @@
 # AUDIT.md
 <!-- Full structured audit of the Missive codebase against SPEC.md sections 1–13.
      Conducted after Session 6. Findings use FIX-N labels matching HANDOFF.md Remediation Order. -->
+> ⚠️ NOTE: This document reflects the state at audit time.
+> All items have since been resolved in Remediation Sessions 1–3.
+> See HANDOFF.md Session Log for final status.
+> Last verified: [today's date] — codebase confirmed launch-ready.## Status Summary (updated after 
 
-## Status Summary (updated after Remediation Session 1)
+Remediation Session 1)
 
 | FIX | Status | File(s) |
 |---|---|---|
