@@ -96,6 +96,8 @@ import { POST as cronDeliver } from "@/app/api/cron/deliver/route";
 import { POST as cancelDelete } from "@/app/api/me/cancel-delete/route";
 import { POST as replyLetter } from "@/app/api/letters/[id]/reply/route";
 import { POST as penPalMatch } from "@/app/api/pen-pal-match/route";
+import { GET as getLetter, DELETE as deleteLetter } from "@/app/api/letters/[id]/route";
+import { GET as getMe } from "@/app/api/me/route";
 
 // Typed references to the mocked modules
 import prisma from "@/lib/prisma";
@@ -543,5 +545,79 @@ describe("Pen pal deduplication", () => {
 
     expect(res.status).toBe(409);
     expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 8. Authorization — cross-user access and unauthenticated requests (SPEC §9)
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("Authorization", () => {
+  const USER_B_LETTER_ID = "user-b-letter-id";
+  const params = { params: { id: USER_B_LETTER_ID } };
+
+  it("GET /api/letters/:id — returns 404 when authenticated user is neither sender nor recipient", async () => {
+    // User A is authenticated; letter belongs to User B (different senderId and recipientUserId)
+    // The handler fetches by ID (findUnique), then checks ownership in code — mismatched user → 404
+    (prisma.letter.findUnique as jest.Mock).mockResolvedValue({
+      id: USER_B_LETTER_ID,
+      senderId: "user-b-id",
+      recipientUserId: "user-b-id",
+      status: "DELIVERED",
+      sender: { username: "userb" },
+      images: [],
+      folderEntry: null,
+    });
+
+    const req = makeReq(undefined, { authorization: "Bearer token" });
+    const res = await getLetter(req, params);
+
+    expect(res.status).toBe(404);
+    // DB was queried by ID, but authorization check (senderId/recipientUserId = me) failed
+    expect(prisma.letter.findUnique).toHaveBeenCalled();
+  });
+
+  it("DELETE /api/letters/:id — returns 404 when authenticated user is not the draft's sender", async () => {
+    // User A is authenticated; draft belongs to User B
+    (prisma.letter.findFirst as jest.Mock).mockResolvedValue(null);
+
+    const req = makeReq(undefined, { authorization: "Bearer token" });
+    const res = await deleteLetter(req, params);
+
+    expect(res.status).toBe(404);
+    expect(prisma.letter.findFirst).toHaveBeenCalled();
+  });
+
+  it("GET /api/me — returns 401 for requests with no Authorization header", async () => {
+    (getUserFromHeader as jest.Mock).mockResolvedValue(null);
+
+    const req = makeReq(undefined); // no authorization header
+    const res = await getMe(req);
+
+    expect(res.status).toBe(401);
+    // No DB access should occur before returning 401
+    expect(prisma.user.findUnique).not.toHaveBeenCalled();
+    expect(prisma.user.findFirst).not.toHaveBeenCalled();
+  });
+
+  it("GET /api/letters/:id — returns 401 for requests with no Authorization header", async () => {
+    (getUserFromHeader as jest.Mock).mockResolvedValue(null);
+
+    const req = makeReq(undefined); // no authorization header
+    const res = await getLetter(req, params);
+
+    expect(res.status).toBe(401);
+    // No DB access should occur before returning 401 (GET handler uses findUnique)
+    expect(prisma.letter.findUnique).not.toHaveBeenCalled();
+  });
+
+  it("DELETE /api/letters/:id — returns 401 for unauthenticated requests", async () => {
+    (getUserFromHeader as jest.Mock).mockResolvedValue(null);
+
+    const req = makeReq(undefined); // no authorization header
+    const res = await deleteLetter(req, params);
+
+    expect(res.status).toBe(401);
+    expect(prisma.letter.findFirst).not.toHaveBeenCalled();
   });
 });

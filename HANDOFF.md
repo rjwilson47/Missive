@@ -4,15 +4,15 @@
 
 ## 🎯 Next Session Starts Here
 <!-- Claude overwrites this section at the end of every session -->
-> **Remediation Session 2 in progress. FIX-7 through FIX-13 done. Resume with FIX-14.**
+> **Remediation Session 2 complete. FIX-7 through FIX-14 all done.**
 >
-> FIX-1 through FIX-13 are done. See Remediation Order section below for full list.
-> Read AUDIT.md for detailed description of each remaining fix.
+> FIX-1 through FIX-14 are all done. All 30 tests pass (20 integration + 10 delivery).
 >
-> **Next fix: FIX-14 — Authorization tests**
-> - Add to `src/__tests__/integration/api.test.ts`: user A cannot read user B's letters, user A cannot delete user B's drafts, unauthenticated requests return 401
+> **Remaining low-priority items (optional):**
+> - "Verify signup rollback flow" — manual QA only (no code change needed unless a bug is found)
+> - "Verify folder name case-insensitive uniqueness" — the logic exists in `src/app/api/folders/route.ts` POST; can add an integration test if desired
 >
-> **Work strictly in Remediation Order. Update "In Progress" before each fix. Tick off after each fix.**
+> **No critical or high-priority items remain. MVP remediation is complete.**
 
 ---
 ## 📌 Build Order
@@ -170,7 +170,7 @@
 ## 🔄 In Progress
 <!-- Claude updates this BEFORE starting each file.
      Clear it when the file moves to Completed. -->
-FIX-14 · Authorization tests — cross-user access denied (403/404)
+(none — all fixes complete)
 
 ---
 
@@ -488,7 +488,7 @@ FIX-14 · Authorization tests — cross-user access denied (403/404)
 
 ### 🟢 Low Priority
 - [x] FIX-13 · letters/route.ts + cron/deliver/route.ts — `systemType` → `system_type` in Prisma queries
-- [ ] FIX-14 · Authorization tests — cross-user access denied (403/404)
+- [x] FIX-14 · Authorization tests — cross-user access denied (403/404)
 - [ ] Verify signup rollback flow
 - [ ] Verify folder name case-insensitive uniqueness
 
@@ -532,4 +532,6 @@ FIX-14 · Authorization tests — cross-user access denied (403/404)
 
 - **FIX-13** · `src/app/api/letters/route.ts:85` — `systemType` → `system_type` in Prisma `folder.findFirst` query (UNOPENED/OPENED lookup was silently ignoring the system folder type, returning wrong or no folder). `src/app/api/cron/deliver/route.ts:73,86` — same bug in `getOrCreateUnOpenedFolder()`: both `findFirst` and `create` used `systemType`, now corrected to `system_type`. 25/25 tests still pass.
 
-**Next:** FIX-14 — Authorization tests
+- **FIX-14** · `src/__tests__/integration/api.test.ts` — Added 5 authorization tests (8th describe block): cross-user GET 404 (mocked `findUnique` returning another user's letter, authorization check fires in code), cross-user DELETE 404 (mocked `findFirst` returning null for ownership check), unauthenticated GET /api/me → 401 (no DB access), unauthenticated GET /api/letters/:id → 401, unauthenticated DELETE /api/letters/:id → 401. Key fix: GET handler uses `prisma.letter.findUnique` (not `findFirst`), so the cross-user 404 test correctly mocks `findUnique` with a letter owned by another user. 30/30 tests pass.
+
+**Next:** Remediation complete. No outstanding critical or high-priority items.
