@@ -18,7 +18,7 @@ import type { Metadata } from "next";
 import AppShell from "@/components/layout/AppShell";
 
 export const metadata: Metadata = {
-  title: "Missive — My Mailbox",
+  title: "Penned — My Mailbox",
 };
 
 /**

@@ -29,12 +29,16 @@ export default function LandingPage() {
             Slow mail for the modern age
           </p>
           <h1 className="text-5xl sm:text-6xl font-serif tracking-tight text-ink leading-tight">
-            Missive
+            Penned
           </h1>
           <p className="text-ink-muted text-lg sm:text-xl leading-relaxed max-w-md mx-auto">
             Write letters. Seal them. Wait for delivery.
             <br className="hidden sm:block" />
             Intentionally slow. Deliberately personal.
+          </p>
+          <p className="text-ink-faint text-sm leading-relaxed max-w-sm mx-auto">
+            Every letter is penned by hand and postmarked for delivery — just
+            like the post used to be.
           </p>
         </div>
 
@@ -58,7 +62,7 @@ export default function LandingPage() {
       <section className="max-w-2xl mx-auto px-6 py-16 space-y-6 border-t border-paper-dark">
         <h2 className="font-serif text-2xl text-ink">In a world of instant messages…</h2>
         <p className="text-ink-muted leading-relaxed">
-          Missive brings back the art of the letter. You write. You seal it.
+          Penned brings back the art of the letter. You write. You seal it.
           Then it travels — taking at least 24 business hours to arrive,
           delivered at 4:00 PM in your recipient's timezone, just like the post.
         </p>
@@ -131,7 +135,7 @@ export default function LandingPage() {
           </Link>
         </div>
         <p className="text-ink-faint text-xs">
-          Missive — slow mail, on purpose.
+          Penned — slow mail, on purpose.
         </p>
       </footer>
     </main>

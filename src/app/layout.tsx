@@ -8,7 +8,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Missive — Digital Post Mail",
+  title: "Penned — Digital Post Mail",
   description: "Write letters. Seal them. Wait for delivery.",
 };
 
