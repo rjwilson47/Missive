@@ -31,14 +31,17 @@ export default function LandingPage() {
           <h1 className="text-5xl sm:text-6xl font-serif tracking-tight text-ink leading-tight">
             Penned
           </h1>
+          <p className="font-serif text-xl sm:text-2xl text-ink leading-snug">
+            The inbox you actually want to open
+          </p>
           <p className="text-ink-muted text-lg sm:text-xl leading-relaxed max-w-md mx-auto">
             Write letters. Seal them. Wait for delivery.
             <br className="hidden sm:block" />
             Intentionally slow. Deliberately personal.
           </p>
           <p className="text-ink-faint text-sm leading-relaxed max-w-sm mx-auto">
-            Every letter is penned by hand and postmarked for delivery — just
-            like the post used to be.
+            Every letter is typed or penned by you, and postmarked for
+            delivery - just like the post used to be.
           </p>
         </div>
 
@@ -63,13 +66,23 @@ export default function LandingPage() {
         <h2 className="font-serif text-2xl text-ink">In a world of instant messages…</h2>
         <p className="text-ink-muted leading-relaxed">
           Penned brings back the art of the letter. You write. You seal it.
-          Then it travels — taking at least 24 business hours to arrive,
+          Then it travels — taking at least 24 business hours or more to arrive,
           delivered at 4:00 PM in your recipient's timezone, just like the post.
         </p>
         <p className="text-ink-muted leading-relaxed">
           No subject lines. No read receipts. No "seen at 9:42 PM." Just the
           quiet anticipation of a letter on its way, and the joy of tearing
           open an envelope that's been waiting in your mailbox.
+        </p>
+      </section>
+
+      {/* ── No junk mail ──────────────────────────────────────────────────── */}
+      <section className="max-w-2xl mx-auto px-6 py-16 space-y-6 border-t border-paper-dark">
+        <h2 className="font-serif text-2xl text-ink">No junk mail</h2>
+        <p className="text-ink-muted leading-relaxed">
+          No promotions. No newsletters. No spam. No algorithmic feed fighting
+          for your attention. Your mailbox only has letters from people who sat
+          down and wrote to you. That&rsquo;s it. The way a mailbox should be.
         </p>
       </section>
 
@@ -80,7 +93,7 @@ export default function LandingPage() {
           <Feature
             icon="✍️"
             title="Write"
-            body="Compose a typed letter in one of six stationery fonts, or upload photos of your handwritten pages. No copy-paste — you must write it."
+            body="Compose a letter in one of six stationery fonts, or upload photos of your handwritten pages. No copy-paste — you must write it."
           />
           <Feature
             icon="✉️"
@@ -100,12 +113,32 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ── Looking for someone ───────────────────────────────────────────── */}
+      <section className="max-w-2xl mx-auto px-6 py-16 space-y-6 border-t border-paper-dark">
+        <h2 className="font-serif text-2xl text-ink">Looking for someone?</h2>
+        <p className="text-ink-muted leading-relaxed">
+          People can link their email, phone, or mailing address to their
+          account username so you can find them. Perfect for tracking down an
+          old friend. If they haven&rsquo;t, or they&rsquo;d rather not be found — we&rsquo;ll
+          never tell you. We just say &ldquo;if an account exists, we&rsquo;ll route it.&rdquo;
+        </p>
+      </section>
+
+      {/* ── Write to a stranger ───────────────────────────────────────────── */}
+      <section className="max-w-2xl mx-auto px-6 py-16 space-y-6 border-t border-paper-dark">
+        <h2 className="font-serif text-2xl text-ink">Write to a stranger.</h2>
+        <p className="text-ink-muted leading-relaxed">
+          Don&rsquo;t know who to write to? We&rsquo;ll match you with someone looking
+          for the same thing — a real letter from a real person.
+        </p>
+      </section>
+
       {/* ── Rules ─────────────────────────────────────────────────────────── */}
       <section className="max-w-2xl mx-auto px-6 py-12 space-y-6 border-t border-paper-dark">
         <h2 className="font-serif text-2xl text-ink">A few ground rules</h2>
         <ul className="space-y-3 text-ink-muted text-sm leading-relaxed list-none">
           {[
-            "You can send up to 3 letters per day.",
+            "You can send up to 3 letters per day - we want to encourage meaningful correspondence.",
             "No subject lines. Ever.",
             "Once sent, a letter cannot be deleted, recalled, or edited.",
             "Copy, cut, and paste are disabled while composing — you must type it.",

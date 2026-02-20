@@ -4,12 +4,21 @@
 
 ## 🎯 Next Session Starts Here
 <!-- Claude overwrites this section at the end of every session -->
-> **All 9 changes complete + build fix applied. Session done.**
+> **Homepage copy changes complete (CHANGE 1–7). Session done.**
 >
-> All requested changes (CHANGE 1–9) implemented and pushed to `claude/explore-project-structure-bYDYo`.
-> Build error from CHANGE 5 also resolved (see fix below).
+> All 7 requested text changes applied to `src/app/page.tsx` and pushed to `claude/explore-project-structure-bYDYo`.
+> No functionality, styling, or layout changes were made.
 
-### Change Log (this session)
+### Change Log (this session — homepage copy)
+- **CHANGE 1 ✅** — Added subheading "The inbox you actually want to open" immediately after `<h1>Penned</h1>` in hero section.
+- **CHANGE 2 ✅** — Letter description updated: "Every letter is typed or penned by you, and postmarked for delivery - just like the post used to be."
+- **CHANGE 3 ✅** — Delivery time: "taking at least 24 business hours or more to arrive".
+- **CHANGE 4 ✅** — New "No junk mail" section inserted after "In a world of instant messages…" and before "How it works".
+- **CHANGE 5 ✅** — Write feature body: "Compose a typed letter…" → "Compose a letter…" (remainder unchanged).
+- **CHANGE 6 ✅** — Two new sections inserted after "How it works" and before "A few ground rules": "Looking for someone?" and "Write to a stranger."
+- **CHANGE 7 ✅** — Ground rules send limit: "You can send up to 3 letters per day - we want to encourage meaningful correspondence."
+
+### Change Log (previous session)
 - **CHANGE 1 ✅** — Renamed all user-facing "Missive" strings to "Penned" across:
   `src/app/layout.tsx`, `src/app/app/layout.tsx`, `src/app/page.tsx`, `src/app/safety/page.tsx`.
   Code comments, variable names, and file names left unchanged. Added tagline about letters being
