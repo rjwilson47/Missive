@@ -1,0 +1,122 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" width="240" height="240">
+  <defs>
+    <!-- Main wax gradient - warm golden bronze -->
+    <radialGradient id="waxMain" cx="40%" cy="38%" r="55%">
+      <stop offset="0%" stop-color="#C9A87C"/>
+      <stop offset="40%" stop-color="#B08A60"/>
+      <stop offset="80%" stop-color="#8A6842"/>
+      <stop offset="100%" stop-color="#6E5232"/>
+    </radialGradient>
+    <!-- Pressed center - slightly lighter/flatter -->
+    <radialGradient id="pressedCenter" cx="42%" cy="38%" r="50%">
+      <stop offset="0%" stop-color="#D4B88E" stop-opacity="0.6"/>
+      <stop offset="60%" stop-color="#B89868" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#8A6842" stop-opacity="0"/>
+    </radialGradient>
+    <!-- Rim highlight -->
+    <radialGradient id="rimLight" cx="35%" cy="30%" r="60%">
+      <stop offset="0%" stop-color="#DECCA0" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#8A6842" stop-opacity="0"/>
+    </radialGradient>
+    <!-- Drop shadow -->
+    <filter id="outerShadow">
+      <feDropShadow dx="0" dy="3" stdDeviation="5" flood-color="#4A3220" flood-opacity="0.25"/>
+    </filter>
+    <!-- Inner emboss effect -->
+    <filter id="emboss">
+      <feDropShadow dx="-1" dy="-1" stdDeviation="0.5" flood-color="#DECCA0" flood-opacity="0.4"/>
+    </filter>
+  </defs>
+
+  <!-- Subtle wax overflow - very slight irregularity at the base -->
+  <ellipse cx="120" cy="122" rx="98" ry="96" fill="#9A7A56" opacity="0.15"/>
+  
+  <!-- Main wax disc - nearly perfect circle with very subtle wobble -->
+  <path d="
+    M120,22
+    C148,21 172,30 188,48
+    C204,66 214,90 214,114
+    C214,138 206,160 190,176
+    C174,192 152,202 126,203
+    C100,204 76,196 58,178
+    C40,160 28,138 26,114
+    C24,90 32,66 48,48
+    C64,30 90,21 120,22
+    Z
+  " fill="url(#waxMain)" filter="url(#outerShadow)"/>
+
+  <!-- Wax surface highlight -->
+  <ellipse cx="105" cy="95" rx="60" ry="45" fill="url(#rimLight)" opacity="0.5"/>
+
+  <!-- Raised outer rim -->
+  <circle cx="120" cy="113" r="82" fill="none" stroke="#6E5232" stroke-width="3" opacity="0.5"/>
+  <circle cx="120" cy="113" r="80" fill="none" stroke="#CBAA80" stroke-width="1" opacity="0.3"/>
+
+  <!-- Pressed inner plateau -->
+  <circle cx="120" cy="113" r="68" fill="url(#pressedCenter)"/>
+
+  <!-- Stamp impression rim - double ring like the reference -->
+  <circle cx="120" cy="113" r="66" fill="none" stroke="#6E5232" stroke-width="2" opacity="0.45"/>
+  <circle cx="120" cy="113" r="58" fill="none" stroke="#6E5232" stroke-width="1.2" opacity="0.35"/>
+
+  <!-- Decorative floral divider line - vertical stem -->
+  <line x1="120" y1="68" x2="120" y2="158" stroke="#6E5232" stroke-width="1.8" opacity="0.4"/>
+
+  <!-- Floral/botanical decorations along the center line -->
+  <!-- Top leaf pair -->
+  <path d="M120,72 C114,68 108,72 112,78 C114,74 118,72 120,74" fill="#6E5232" opacity="0.35"/>
+  <path d="M120,72 C126,68 132,72 128,78 C126,74 122,72 120,74" fill="#6E5232" opacity="0.35"/>
+  
+  <!-- Upper-mid leaf pair -->
+  <path d="M120,86 C112,82 106,88 112,92 C114,88 118,86 120,88" fill="#6E5232" opacity="0.35"/>
+  <path d="M120,86 C128,82 134,88 128,92 C126,88 122,86 120,88" fill="#6E5232" opacity="0.35"/>
+
+  <!-- Small berries/dots -->
+  <circle cx="112" cy="82" r="2" fill="#6E5232" opacity="0.3"/>
+  <circle cx="128" cy="82" r="2" fill="#6E5232" opacity="0.3"/>
+  <circle cx="110" cy="94" r="1.5" fill="#6E5232" opacity="0.3"/>
+  <circle cx="130" cy="94" r="1.5" fill="#6E5232" opacity="0.3"/>
+
+  <!-- Lower-mid leaf pair -->
+  <path d="M120,132 C112,128 106,134 112,138 C114,134 118,132 120,134" fill="#6E5232" opacity="0.35"/>
+  <path d="M120,132 C128,128 134,134 128,138 C126,134 122,132 120,134" fill="#6E5232" opacity="0.35"/>
+
+  <!-- Bottom leaf pair -->
+  <path d="M120,146 C114,142 108,146 112,152 C114,148 118,146 120,148" fill="#6E5232" opacity="0.35"/>
+  <path d="M120,146 C126,142 132,146 128,152 C126,148 122,146 120,148" fill="#6E5232" opacity="0.35"/>
+
+  <!-- Small berries bottom -->
+  <circle cx="112" cy="142" r="2" fill="#6E5232" opacity="0.3"/>
+  <circle cx="128" cy="142" r="2" fill="#6E5232" opacity="0.3"/>
+  <circle cx="110" cy="150" r="1.5" fill="#6E5232" opacity="0.3"/>
+  <circle cx="130" cy="150" r="1.5" fill="#6E5232" opacity="0.3"/>
+
+  <!-- Letter P - large, serif, embossed look -->
+  <!-- Shadow layer -->
+  <text x="121" y="128" 
+    font-family="Georgia, 'Palatino Linotype', 'Book Antiqua', serif" 
+    font-size="72" 
+    font-weight="bold"
+    fill="#4A3220" 
+    text-anchor="middle" 
+    opacity="0.5"
+    letter-spacing="-1">P</text>
+  <!-- Highlight layer -->
+  <text x="119" y="126" 
+    font-family="Georgia, 'Palatino Linotype', 'Book Antiqua', serif" 
+    font-size="72" 
+    font-weight="bold"
+    fill="#DECCA0" 
+    text-anchor="middle" 
+    opacity="0.35"
+    letter-spacing="-1">P</text>
+  <!-- Main letter -->
+  <text x="120" y="127" 
+    font-family="Georgia, 'Palatino Linotype', 'Book Antiqua', serif" 
+    font-size="72" 
+    font-weight="bold"
+    fill="#7A5A38" 
+    text-anchor="middle" 
+    opacity="0.6"
+    letter-spacing="-1">P</text>
+</svg>
