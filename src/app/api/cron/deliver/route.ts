@@ -12,7 +12,7 @@
  *   3. Mark UNDELIVERABLE: IN_TRANSIT + null recipient + sentAt > 3 days ago.
  *   4. Re-attempt routing: IN_TRANSIT + null recipient + sentAt <= 3 days ago.
  *      Uses addressingInputType/Value to look up recipient; respects discoverability.
- *   5. Deliver due letters: IN_TRANSIT + recipientUserId set + scheduledDeliveryAt <= now.
+ *   5. Deliver due letters: IN_TRANSIT + recipientUserId set + scheduled_delivery_aT <= now.
  *      a. BlockList check → mark BLOCKED if blocked.
  *      b. Otherwise → mark DELIVERED, set deliveredAt, assign to UNOPENED folder.
  *   6. Return { deleted, delivered, blocked, undeliverable }.
@@ -114,7 +114,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   // or left orphaned per schema — they are never shown to the recipient's sender view).
   try {
     const toDelete = await prisma.user.findMany({
-      where: { markedForDeletionAt: { lte: deletionCutoff } },
+      where: { marked_for_deletion_at: { lte: deletionCutoff } },
       select: { id: true },
     });
 
@@ -142,7 +142,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       where: {
         status: "IN_TRANSIT",
         recipientUserId: null,
-        sentAt: { lte: undeliverableCutoff },
+        sent_at: { lte: undeliverableCutoff },
       },
       data: { status: "UNDELIVERABLE" },
     });
@@ -250,7 +250,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
           where: { id: letter.id },
           data: {
             recipientUserId: resolvedRecipientId,
-            scheduledDeliveryAt: scheduledDeliveryUtc,
+            scheduled_delivery_at: scheduledDeliveryUtc,
           },
         });
 
@@ -278,7 +278,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       where: {
         status: "IN_TRANSIT",
         recipientUserId: { not: null },
-        scheduledDeliveryAt: { lte: now },
+        scheduled_delivery_at: { lte: now },
       },
       select: {
         id: true,
@@ -341,7 +341,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       delivered++;
     } catch (err) {
       // Per-letter error: log and skip. The letter remains IN_TRANSIT and will be
-      // retried on the next cron run since scheduledDeliveryAt is still <= now.
+      // retried on the next cron run since scheduled_delivery_at is still <= now.
       console.error(`[cron/deliver] Error delivering letter ${letter.id}:`, err);
     }
   }
