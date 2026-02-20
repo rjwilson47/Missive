@@ -18,6 +18,7 @@
  */
 
 import prisma from "@/lib/prisma";
+import type { Prisma } from "@prisma/client";
 import { supabaseAdmin } from "@/lib/supabase";
 import { isValidIanaTimezone } from "@/lib/delivery";
 import type { AppUser } from "@/types";
@@ -417,7 +418,7 @@ async function createWelcomeLetter(newUserId: string, newUsername: string): Prom
       contentType: "TYPED",
       status: "DELIVERED",
       font_family: "Crimson Text",
-      typed_body_json: buildWelcomeLetterJson(newUsername),
+      typed_body_json: buildWelcomeLetterJson(newUsername) as unknown as Prisma.InputJsonValue,
       sent_at: now,
       scheduled_delivery_at: now,
       delivered_at: now,
