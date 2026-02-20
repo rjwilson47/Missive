@@ -107,7 +107,7 @@ export default function Sidebar({ customFolders = [] }: SidebarProps) {
       <div className="mt-auto pt-2 border-t border-paper-dark flex flex-col gap-1">
         <Link
           href="/app/settings"
-          className={navLinkClass("/app/settings", pathname) + " text-ink-muted"}
+          className={navLinkClass("/app/settings", pathname) + " font-medium"}
         >
           Settings
         </Link>

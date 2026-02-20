@@ -4,10 +4,10 @@
 
 ## 🎯 Next Session Starts Here
 <!-- Claude overwrites this section at the end of every session -->
-> **Branding session in progress. CHANGES 1–3 complete.**
+> **Branding session in progress. CHANGES 1–4 complete.**
 >
 > Working through 9 user-requested changes on branch `claude/explore-project-structure-bYDYo`.
-> CHANGES 1–3 done. CHANGES 4–9 pending confirmation and implementation.
+> CHANGES 1–4 done. CHANGES 5–9 pending confirmation and implementation.
 
 ### Change Log (this session)
 - **CHANGE 1 ✅** — Renamed all user-facing "Missive" strings to "Penned" across:
@@ -16,7 +16,7 @@
   "penned and postmarked" on the front page hero.
 - **CHANGE 2 ✅** — Reduced homepage hero whitespace: `min-h-[70vh]` → `min-h-[45vh]`, added `pt-12 pb-8` for tighter vertical framing, `space-y-8` → `space-y-5` between header and buttons, `space-y-3` inside header block.
 - **CHANGE 3 ✅** — Added logout button to `Sidebar.tsx` below Settings. Calls `POST /api/auth/logout` with Bearer token, clears `missive_token` from localStorage, redirects to `/`. Styled as `text-seal/80` (muted red) with `hover:text-seal` to distinguish from nav links.
-- **CHANGE 4** — Pending confirmation
+- **CHANGE 4 ✅** — Settings link in `Sidebar.tsx`: removed `text-ink-muted` override, added `font-medium`. Now renders in full dark `ink` (#1a1a1a) with medium weight, standing out from other sidebar items.
 - **CHANGE 5** — Pending confirmation
 - **CHANGE 6** — Pending confirmation
 - **CHANGE 7** — Pending confirmation
