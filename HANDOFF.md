@@ -4,10 +4,10 @@
 
 ## 🎯 Next Session Starts Here
 <!-- Claude overwrites this section at the end of every session -->
-> **Branding session in progress. CHANGES 1–7 complete.**
+> **Branding session in progress. CHANGES 1–8 complete. CHANGE 9 requires confirmation.**
 >
 > Working through 9 user-requested changes on branch `claude/explore-project-structure-bYDYo`.
-> CHANGES 1–7 done. CHANGES 8–9 require analysis + confirmation before implementing.
+> CHANGES 1–8 done. CHANGE 9 pending analysis + confirmation.
 
 ### Change Log (this session)
 - **CHANGE 1 ✅** — Renamed all user-facing "Missive" strings to "Penned" across:
@@ -23,7 +23,7 @@
   - `drafts/page.tsx` card: shows "To: [username|input|No recipient yet]", "Started [date]", "· Edited [date]" (edited line only shown if updatedAt ≠ createdAt)
 - **CHANGE 6 ✅** — Homepage CTA: "Start writing" → "Create Account" in `src/app/page.tsx`.
 - **CHANGE 7 ✅** — Added "← Back to homepage" link (styled as subtle underline text) below the form on both `signup/page.tsx` and `login/page.tsx`.
-- **CHANGE 8** — Pending analysis + confirmation
+- **CHANGE 8 ✅** — Region field replaced with grouped sub-regional dropdown (17 options across 5 continent groups) in `signup/page.tsx` and `settings/page.tsx`. `REGION_GROUPS` constant defined inline in each file. Pen pal SAME_REGION matching now reliable (exact string match on consistent values). Postmarks read naturally ("Sent from Western Europe"). No schema/API changes needed.
 - **CHANGE 9** — Pending analysis + confirmation
 
 ---
