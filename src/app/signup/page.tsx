@@ -172,6 +172,12 @@ export default function SignupPage() {
             Create account
           </Button>
         </form>
+
+        <p className="text-center text-sm text-ink-muted">
+          <Link href="/" className="underline hover:text-ink">
+            ← Back to homepage
+          </Link>
+        </p>
       </div>
     </main>
   );

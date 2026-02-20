@@ -47,7 +47,7 @@ export default function LandingPage() {
             href="/signup"
             className="px-7 py-3 bg-ink text-paper rounded text-sm font-medium hover:bg-ink/80 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-seal focus-visible:ring-offset-2"
           >
-            Start writing
+            Create Account
           </Link>
           <Link
             href="/login"
