@@ -160,6 +160,7 @@ function HandwrittenUploader({
 }) {
   const [images, setImages] = useState<LetterImageShape[]>([]);
   const [isUploading, setIsUploading] = useState(false);
+  const [isRemoving, setIsRemoving] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -203,7 +204,33 @@ function HandwrittenUploader({
     }
   }
 
-  function handleRemove(idx: number) {
+  async function handleRemove(idx: number) {
+    const img = images[idx];
+    const token =
+      typeof window !== "undefined" ? (localStorage.getItem(TOKEN_KEY) ?? "") : "";
+
+    setIsRemoving(true);
+    setUploadError(null);
+
+    try {
+      const res = await fetch(`/api/letters/${draftId}/images/${img.id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      // 404 means already gone from storage/DB — treat as success
+      if (!res.ok && res.status !== 404) {
+        const data = (await res.json()) as { error?: string };
+        setUploadError(data.error ?? "Failed to remove image. Please try again.");
+        return;
+      }
+    } catch {
+      setUploadError("Network error. Failed to remove image.");
+      return;
+    } finally {
+      setIsRemoving(false);
+    }
+
     setImages((prev) => prev.filter((_, i) => i !== idx));
   }
 
@@ -223,9 +250,10 @@ function HandwrittenUploader({
               </span>
               <button
                 onClick={() => handleRemove(idx)}
-                className="text-xs text-seal hover:underline focus:outline-none"
+                disabled={isRemoving}
+                className="text-xs text-seal hover:underline focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Remove
+                {isRemoving ? "Removing…" : "Remove"}
               </button>
             </li>
           ))}

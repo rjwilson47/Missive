@@ -4,14 +4,15 @@
 
 ## 🎯 Next Session Starts Here
 <!-- Claude overwrites this section at the end of every session -->
-> **Remediation Session 2 in progress. FIX-7 through FIX-10 done. Resume with FIX-11.**
+> **Remediation Session 2 in progress. FIX-7 through FIX-11 done. Resume with FIX-12.**
 >
-> FIX-1 through FIX-10 are done. See Remediation Order section below for full list.
+> FIX-1 through FIX-11 are done. See Remediation Order section below for full list.
 > Read AUDIT.md for detailed description of each remaining fix.
 >
-> **Next fix: FIX-11 — Handwritten image server-side delete on removal**
-> - `src/components/compose/WriteStep.tsx` — when user removes an image, call DELETE /api/letters/[id]/images/[imageId]
-> - New file: `src/app/api/letters/[id]/images/[imageId]/route.ts` — DELETE handler (auth + DRAFT ownership + delete LetterImage row + delete from Supabase Storage)
+> **Next fix: FIX-12 — Integration tests (7 scenarios)**
+> - Create `src/__tests__/integration/` with mocked Prisma and Supabase
+> - Scenarios: quota enforcement, cron delivery, blocking, account deletion, cancel deletion, reply draft, pen pal match deduplication
+> - See AUDIT.md FIX-12 for the full scenario list
 >
 > **Work strictly in Remediation Order. Update "In Progress" before each fix. Tick off after each fix.**
 
@@ -171,7 +172,7 @@
 ## 🔄 In Progress
 <!-- Claude updates this BEFORE starting each file.
      Clear it when the file moves to Completed. -->
-FIX-11 · WriteStep.tsx + DELETE /api/letters/[id]/images/[imageId] — handwritten image server-side delete on removal
+FIX-12 · src/__tests__/integration/ — 7 integration test scenarios
 
 ---
 
@@ -182,7 +183,6 @@ FIX-11 · WriteStep.tsx + DELETE /api/letters/[id]/images/[imageId] — handwrit
 - Partial index for `Letter.status = 'IN_TRANSIT'` must be created manually via SQL after `prisma db push` (documented in schema comments)
 - `src/app/api/cron/deliver/route.ts` — re-routing uses `sentAt > cutoff` but sentAt is not fetched in scope for `computeScheduledDelivery`; uses `now` as approximation (acceptable given 3-day window)
 - `src/app/app/compose/page.tsx` — `isPenPalEligible` is always `true` (simplified); a real check would call GET /api/me and check `availableForPenPalMatching` (Session 5)
-- `src/components/compose/WriteStep.tsx` — HandwrittenUploader's "Remove" button only removes from local state, not from Supabase Storage or the DB LetterImage row (acceptable for MVP; real delete needs a DELETE /api/upload/:id endpoint)
 
 ---
 
@@ -484,7 +484,7 @@ FIX-11 · WriteStep.tsx + DELETE /api/letters/[id]/images/[imageId] — handwrit
 - [x] FIX-10 · Cron — 30-day account deletion phase
 
 ### 🟡 Medium Priority
-- [ ] Handwritten image server-side delete on removal
+- [x] FIX-11 · Handwritten image server-side delete on removal
 - [ ] Client-side character counter (50,000 char limit)
 - [ ] Integration tests (7 scenarios from SPEC §12)
 
@@ -519,7 +519,7 @@ FIX-11 · WriteStep.tsx + DELETE /api/letters/[id]/images/[imageId] — handwrit
 **Next:** FIX-7 — Settings recovery email UI + PUT /api/me
 
 ### Remediation Session 2
-**Status:** In Progress — FIX-7 through FIX-10 done
+**Status:** In Progress — FIX-7 through FIX-11 done
 
 **What was done:**
 - **FIX-7** · `src/types/index.ts` — Added `recoveryEmail: string | null` to `AppUser` interface. `src/lib/auth.ts` — `prismaUserToAppUser()` now maps `dbUser.recovery_email → recoveryEmail`. `src/app/api/me/route.ts` — PUT handler accepts `recoveryEmail?: string | null`, validates email format, maps to `recovery_email` Prisma field, accepts `null`/`""` to clear. `src/app/app/settings/page.tsx` — added "Password Recovery" section (section 4 of 6): email input pre-populated from `userData.recoveryEmail`, warning text about unverified email, Save + Clear buttons.
@@ -527,4 +527,6 @@ FIX-11 · WriteStep.tsx + DELETE /api/letters/[id]/images/[imageId] — handwrit
 - **FIX-9** · `src/app/api/me/route.ts` — After successful Prisma `user.update`, syncs Supabase auth email: sets to `recovery_email` value if non-null, or restores synthetic UUID email if cleared (so login continues to work). Sync failures logged but do not roll back the DB update.
 - **FIX-10** · `src/app/api/cron/deliver/route.ts` — Added Phase 0 before Step 1: finds users where `markedForDeletionAt <= now - 30 days`, deletes each with `prisma.user.delete()` (cascades handle received letters, drafts, folders, identifiers, block lists). Added `DELETION_GRACE_PERIOD_MS` constant (30 days). Added `deleted` counter to response: `{ deleted, delivered, blocked, undeliverable }`. Per-user error handling (log and continue).
 
-**Next:** FIX-11 — Handwritten image server-side delete on removal
+- **FIX-11** · `src/app/api/letters/[id]/images/[imageId]/route.ts` (new) — DELETE handler: JWT auth, DRAFT ownership check via joined query, delete both storage objects (full-res + thumbnail, best-effort log on failure), delete LetterImage DB row, return 204. `src/components/compose/WriteStep.tsx` — `handleRemove` now async: calls DELETE endpoint first (treats 404 as success), only removes from state on success, shows error via `uploadError` state on failure; added `isRemoving` state to disable Remove buttons during deletion.
+
+**Next:** FIX-12 — Integration tests (7 scenarios)
