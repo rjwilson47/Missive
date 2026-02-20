@@ -4,11 +4,19 @@
 
 ## 🎯 Next Session Starts Here
 <!-- Claude overwrites this section at the end of every session -->
-> **Hero tagline styling tweak complete. Session done.**
+> **Welcome letter wording update complete. Session done.**
 >
-> 1 change applied to `src/app/page.tsx` and pushed to `claude/explore-project-structure-bYDYo`.
+> 1 change applied to `src/lib/auth.ts` (`buildWelcomeLetterJson`) and pushed to `claude/explore-project-structure-bYDYo`.
 
-### Change Log (this session — hero tagline styling)
+### Change Log (this session — welcome letter wording)
+- **CHANGE 1 ✅** — `src/lib/auth.ts` · `buildWelcomeLetterJson()`: replaced entire welcome letter body with new wording. Specific diffs:
+  - Opening line `"Hi ${username}, welcome to Penned."` → split into `"Hi ${username},"` (blank line) `"Welcome to Penned."`
+  - `"just like real post."` → `"just like the real post."`
+  - New paragraph added after "We hope it brings…": `"This won't replace your email for everyday subscriptions and news updates. It won't replace your texts or social media to friends. But it will be a spam and junk free space to write longer updates to whomever you like."`
+  - `"A few things worth doing in Settings:"` → `"A few things worth doing in the Settings:"`
+  - Identifiers bullet extended: now ends with `"(these are just identifiers to help others find you - they won't be used)."`
+
+### Change Log (previous session — hero tagline styling)
 - **CHANGE 1 ✅** — Hero tagline "Write letters…" paragraph: font reduced one step (`text-lg sm:text-xl` → `text-base sm:text-lg`), line spacing increased (`leading-relaxed` → `leading-loose`) for more breathing room between the three lines.
 
 ### Change Log (previous session — homepage spacing + tagline)
