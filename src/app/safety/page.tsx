@@ -14,7 +14,7 @@ export default function SafetyPage() {
         <div className="space-y-3">
           <h1 className="text-3xl font-serif text-ink">Safety &amp; Privacy</h1>
           <p className="text-ink-muted leading-relaxed">
-            Missive is designed to be a thoughtful, low-friction space. Here is
+            Penned is designed to be a thoughtful, low-friction space. Here is
             how we keep it safe.
           </p>
         </div>
@@ -76,7 +76,7 @@ export default function SafetyPage() {
         <section className="space-y-3">
           <h2 className="text-xl font-serif text-ink">Your privacy</h2>
           <p className="text-ink-muted leading-relaxed">
-            Missive is designed with privacy by default:
+            Penned is designed with privacy by default:
           </p>
           <ul className="text-ink-muted leading-relaxed space-y-1 list-none pl-0">
             <li className="flex gap-3">
@@ -125,7 +125,7 @@ export default function SafetyPage() {
             href="/"
             className="text-sm text-ink-muted hover:text-ink transition-colors underline underline-offset-2"
           >
-            ← Back to Missive
+            ← Back to Penned
           </Link>
         </div>
       </div>

@@ -4,11 +4,24 @@
 
 ## 🎯 Next Session Starts Here
 <!-- Claude overwrites this section at the end of every session -->
-> **Remediation Session 3 complete. FIX-15, FIX-16, FIX-17 done. All SPEC requirements now enforced.**
+> **Branding session in progress. CHANGE 1 complete (Missive → Penned rename).**
 >
-> FIX-1 through FIX-17 are all done. All 30 tests pass (20 integration + 10 delivery).
->
-> **No outstanding items remain. MVP is launch-ready.**
+> Working through 9 user-requested changes on branch `claude/explore-project-structure-bYDYo`.
+> CHANGE 1 done. CHANGES 2–9 pending confirmation and implementation.
+
+### Change Log (this session)
+- **CHANGE 1 ✅** — Renamed all user-facing "Missive" strings to "Penned" across:
+  `src/app/layout.tsx`, `src/app/app/layout.tsx`, `src/app/page.tsx`, `src/app/safety/page.tsx`.
+  Code comments, variable names, and file names left unchanged. Added tagline about letters being
+  "penned and postmarked" on the front page hero.
+- **CHANGE 2** — Pending confirmation
+- **CHANGE 3** — Pending confirmation
+- **CHANGE 4** — Pending confirmation
+- **CHANGE 5** — Pending confirmation
+- **CHANGE 6** — Pending confirmation
+- **CHANGE 7** — Pending confirmation
+- **CHANGE 8** — Pending analysis + confirmation
+- **CHANGE 9** — Pending analysis + confirmation
 
 ---
 ## 📌 Build Order
