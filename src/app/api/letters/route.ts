@@ -82,7 +82,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     // --- System folders: UNOPENED / OPENED ---
     if (folder === "UNOPENED" || folder === "OPENED") {
       const systemFolder = await prisma.folder.findFirst({
-        where: { userId: me.id, systemType: folder },
+        where: { userId: me.id, system_type: folder },
         select: { id: true },
       });
 

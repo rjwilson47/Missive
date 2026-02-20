@@ -70,7 +70,7 @@ async function getOrCreateUnOpenedFolder(
   recipientId: string
 ): Promise<{ id: string }> {
   const existing = await prisma.folder.findFirst({
-    where: { userId: recipientId, systemType: "UNOPENED" },
+    where: { userId: recipientId, system_type: "UNOPENED" },
     select: { id: true },
   });
 
@@ -83,7 +83,7 @@ async function getOrCreateUnOpenedFolder(
     data: {
       userId: recipientId,
       name: "Unopened",
-      systemType: "UNOPENED",
+      system_type: "UNOPENED",
     },
     select: { id: true },
   });

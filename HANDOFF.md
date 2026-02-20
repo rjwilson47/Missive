@@ -4,15 +4,13 @@
 
 ## 🎯 Next Session Starts Here
 <!-- Claude overwrites this section at the end of every session -->
-> **Remediation Session 2 in progress. FIX-7 through FIX-12 done. Resume with FIX-13.**
+> **Remediation Session 2 in progress. FIX-7 through FIX-13 done. Resume with FIX-14.**
 >
-> FIX-1 through FIX-12 are done. See Remediation Order section below for full list.
+> FIX-1 through FIX-13 are done. See Remediation Order section below for full list.
 > Read AUDIT.md for detailed description of each remaining fix.
 >
-> **Next fix: FIX-13 — Verify Folder systemType field name in letters/route.ts GET**
-> - Check `src/app/api/letters/route.ts` line ~84: `where: { userId: me.id, systemType: folder }`
-> - If the Prisma schema uses `system_type`, this query silently returns wrong results
-> - Verify and fix if needed
+> **Next fix: FIX-14 — Authorization tests**
+> - Add to `src/__tests__/integration/api.test.ts`: user A cannot read user B's letters, user A cannot delete user B's drafts, unauthenticated requests return 401
 >
 > **Work strictly in Remediation Order. Update "In Progress" before each fix. Tick off after each fix.**
 
@@ -172,7 +170,7 @@
 ## 🔄 In Progress
 <!-- Claude updates this BEFORE starting each file.
      Clear it when the file moves to Completed. -->
-FIX-13 · src/app/api/letters/route.ts — verify Folder systemType field name in GET query
+FIX-14 · Authorization tests — cross-user access denied (403/404)
 
 ---
 
@@ -489,7 +487,8 @@ FIX-13 · src/app/api/letters/route.ts — verify Folder systemType field name i
 - [x] FIX-12 · Integration tests (7 scenarios from SPEC §12)
 
 ### 🟢 Low Priority
-- [ ] Authorization tests
+- [x] FIX-13 · letters/route.ts + cron/deliver/route.ts — `systemType` → `system_type` in Prisma queries
+- [ ] FIX-14 · Authorization tests — cross-user access denied (403/404)
 - [ ] Verify signup rollback flow
 - [ ] Verify folder name case-insensitive uniqueness
 
@@ -519,7 +518,7 @@ FIX-13 · src/app/api/letters/route.ts — verify Folder systemType field name i
 **Next:** FIX-7 — Settings recovery email UI + PUT /api/me
 
 ### Remediation Session 2
-**Status:** In Progress — FIX-7 through FIX-12 done
+**Status:** In Progress — FIX-7 through FIX-13 done
 
 **What was done:**
 - **FIX-7** · `src/types/index.ts` — Added `recoveryEmail: string | null` to `AppUser` interface. `src/lib/auth.ts` — `prismaUserToAppUser()` now maps `dbUser.recovery_email → recoveryEmail`. `src/app/api/me/route.ts` — PUT handler accepts `recoveryEmail?: string | null`, validates email format, maps to `recovery_email` Prisma field, accepts `null`/`""` to clear. `src/app/app/settings/page.tsx` — added "Password Recovery" section (section 4 of 6): email input pre-populated from `userData.recoveryEmail`, warning text about unverified email, Save + Clear buttons.
@@ -531,4 +530,6 @@ FIX-13 · src/app/api/letters/route.ts — verify Folder systemType field name i
 
 - **FIX-12** · `src/__tests__/integration/api.test.ts` (new) — 15 integration tests across 7 scenarios: quota enforcement (3 tests), cron delivery (1), cron blocking (1), account deletion Phase 0 (2), cancel deletion (2), reply draft (3), pen pal deduplication (3). Mocks Prisma, Supabase, auth helpers, and rate limiters using `jest.resetAllMocks()` to prevent mock queue contamination across tests. All 15 tests + 10 existing delivery unit tests pass.
 
-**Next:** FIX-13 — Verify Folder systemType field name in letters/route.ts
+- **FIX-13** · `src/app/api/letters/route.ts:85` — `systemType` → `system_type` in Prisma `folder.findFirst` query (UNOPENED/OPENED lookup was silently ignoring the system folder type, returning wrong or no folder). `src/app/api/cron/deliver/route.ts:73,86` — same bug in `getOrCreateUnOpenedFolder()`: both `findFirst` and `create` used `systemType`, now corrected to `system_type`. 25/25 tests still pass.
+
+**Next:** FIX-14 — Authorization tests
