@@ -84,6 +84,7 @@ export async function GET(
     where: { id: params.id },
     include: {
       sender: { select: { username: true } },
+      recipient: { select: { username: true } },
       images: { orderBy: { order_index: "asc" } },
       folderEntry: { select: { folderId: true } },
     },
@@ -151,6 +152,9 @@ export async function GET(
     deliveredAt: letter.delivered_at?.toISOString() ?? null,
     openedAt: letter.opened_at?.toISOString() ?? null,
     createdAt: letter.created_at.toISOString(),
+    updatedAt: letter.updated_at?.toISOString() ?? letter.created_at.toISOString(),
+    recipientUsername: letter.recipient?.username ?? null,
+    addressingInputValue: letter.addressingInputValue ?? null,
     typedBodyJson: (letter.typed_body_json as Record<string, unknown>) ?? null,
     fontFamily: letter.font_family ?? null,
     images: imagesWithUrls,

@@ -4,9 +4,10 @@
 
 ## 🎯 Next Session Starts Here
 <!-- Claude overwrites this section at the end of every session -->
-> **All 9 changes complete. Session done.**
+> **All 9 changes complete + build fix applied. Session done.**
 >
 > All requested changes (CHANGE 1–9) implemented and pushed to `claude/explore-project-structure-bYDYo`.
+> Build error from CHANGE 5 also resolved (see fix below).
 
 ### Change Log (this session)
 - **CHANGE 1 ✅** — Renamed all user-facing "Missive" strings to "Penned" across:
@@ -20,6 +21,7 @@
   - `LetterSummary` type extended with `updatedAt`, `recipientUsername`, `addressingInputValue`
   - `letterToSummary()` in `api/letters/route.ts` populates new fields; DRAFTS query now includes `recipient: { select: { username: true } }`
   - `drafts/page.tsx` card: shows "To: [username|input|No recipient yet]", "Started [date]", "· Edited [date]" (edited line only shown if updatedAt ≠ createdAt)
+  - **BUILD FIX ✅** — `api/letters/[id]/route.ts` was missing the three new `LetterSummary` fields in its `LetterDetail` construction; added `updatedAt`, `recipientUsername`, `addressingInputValue` + included `recipient` in Prisma query
 - **CHANGE 6 ✅** — Homepage CTA: "Start writing" → "Create Account" in `src/app/page.tsx`.
 - **CHANGE 7 ✅** — Added "← Back to homepage" link (styled as subtle underline text) below the form on both `signup/page.tsx` and `login/page.tsx`.
 - **CHANGE 8 ✅** — Region field replaced with grouped sub-regional dropdown (17 options across 5 continent groups) in `signup/page.tsx` and `settings/page.tsx`. `REGION_GROUPS` constant defined inline in each file. Pen pal SAME_REGION matching now reliable (exact string match on consistent values). Postmarks read naturally ("Sent from Western Europe"). No schema/API changes needed.
