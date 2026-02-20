@@ -114,7 +114,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   // or left orphaned per schema — they are never shown to the recipient's sender view).
   try {
     const toDelete = await prisma.user.findMany({
-      where: { marked_for_deletion_at: { lte: deletionCutoff } },
+      where: { markedForDeletionAt: { lte: deletionCutoff } },
       select: { id: true },
     });
 
@@ -170,7 +170,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       where: {
         status: "IN_TRANSIT",
         recipientUserId: null,
-        sentAt: { gt: undeliverableCutoff },
+        sent_at: { gt: undeliverableCutoff },
       },
       select: {
         id: true,
@@ -322,7 +322,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
           where: { id: letter.id },
           data: {
             status: "DELIVERED",
-            deliveredAt: now,
+            delivered_at: now,
           },
         }),
 
