@@ -4,11 +4,14 @@
 
 ## 🎯 Next Session Starts Here
 <!-- Claude overwrites this section at the end of every session -->
-> **Homepage spacing + tagline line-break changes complete. Session done.**
+> **Hero tagline styling tweak complete. Session done.**
 >
-> 2 changes applied to `src/app/page.tsx` and pushed to `claude/explore-project-structure-bYDYo`.
+> 1 change applied to `src/app/page.tsx` and pushed to `claude/explore-project-structure-bYDYo`.
 
-### Change Log (this session — homepage spacing + tagline)
+### Change Log (this session — hero tagline styling)
+- **CHANGE 1 ✅** — Hero tagline "Write letters…" paragraph: font reduced one step (`text-lg sm:text-xl` → `text-base sm:text-lg`), line spacing increased (`leading-relaxed` → `leading-loose`) for more breathing room between the three lines.
+
+### Change Log (previous session — homepage spacing + tagline)
 - **CHANGE 1 ✅** — Reduced padding on all sub-sections by one Tailwind step (`py-16`→`py-12`, `py-12`→`py-10`). Hero section (`pt-12 pb-8`) left untouched. Affected: "In a world of…", "How it works", "Looking for someone?", "Write to a stranger.", "A few ground rules".
 - **CHANGE 2 ✅** — Hero tagline split into 3 explicit lines via two `<br />` tags: "Write letters…" / "Intentionally slow…" / "Just like the post used to be." First break changed from `hidden sm:block` to always-on.
 

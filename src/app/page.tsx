@@ -34,7 +34,7 @@ export default function LandingPage() {
           <p className="font-serif text-xl sm:text-2xl text-ink leading-snug">
             The inbox you actually want to open
           </p>
-          <p className="text-ink-muted text-lg sm:text-xl leading-relaxed max-w-md mx-auto">
+          <p className="text-ink-muted text-base sm:text-lg leading-loose max-w-md mx-auto">
             Write letters. Seal them. Wait for delivery.
             <br />
             Intentionally slow. Deliberately personal.
