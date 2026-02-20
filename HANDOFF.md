@@ -446,3 +446,72 @@
 - Account purge cron job (30-day deletion is marked but not executed)
 
 **Next:** MVP is complete. See README.md §11 for post-MVP improvements.
+
+
+---
+
+## 🔍 Audit Complete — Remediation Phase Begins
+<!-- Added after full project audit. Original session log preserved above. -->
+
+## 🎯 Next Session Starts Here
+> Full audit complete. All 6 build sessions done. Now in remediation phase.
+> Read AUDIT.md in full before starting.
+> Begin with CRITICAL BLOCKERS in this exact order:
+>
+> 1. Fix field name mismatch in src/app/api/letters/[id]/send/route.ts
+>    - sentAt → sent_at
+>    - scheduledDeliveryAt → scheduled_delivery_at
+>    - senderRegionAtSend → sender_region_at_send
+>    - senderTimezoneAtSend → sender_timezone_at_send
+>
+> 2. Fix DailyQuota field name in same file
+>    - All occurrences of sentCount → sent_count
+>
+> 3. Fix font prop in src/components/compose/WriteStep.tsx
+>    - font={font} → fontFamily={font}
+>
+> After each fix confirm it works before moving to the next.
+> Then move to HIGH PRIORITY items in AUDIT.md.
+
+---
+
+## 📌 Remediation Order
+<!-- Work through these in order. Tick off as fully completed. -->
+
+### 🔴 Critical Blockers
+- [ ] send/route.ts — Prisma field names (sent_at etc.)
+- [ ] send/route.ts — DailyQuota sent_count
+- [ ] WriteStep.tsx — font prop name
+
+### 🟠 High Priority
+- [ ] Italic toolbar button + aria-pressed
+- [ ] ReviewStep — pass real scheduledDeliveryAt
+- [ ] isPenPalEligible — read from real user flag
+- [ ] Settings — recovery email UI + warning text
+- [ ] /forgot-password page + API route
+- [ ] Recovery email → Supabase auth email sync
+- [ ] Cron — 30-day account deletion phase
+
+### 🟡 Medium Priority
+- [ ] Handwritten image server-side delete on removal
+- [ ] Client-side character counter (50,000 char limit)
+- [ ] Integration tests (7 scenarios from SPEC §12)
+
+### 🟢 Low Priority
+- [ ] Authorization tests
+- [ ] Verify signup rollback flow
+- [ ] Verify folder name case-insensitive uniqueness
+
+---
+
+## 🔑 Additional Decisions from Audit
+- Recovery email and routing email (UserIdentifier) are separate —
+  label clearly in Settings UI
+- Show generic "1–5 business days" estimate when recipient timezone
+  unknown (unresolvable address/phone/email routing)
+- Folder case-insensitive uniqueness needs verification in 
+  POST /api/folders
+
+## 📋 Session Log (continued)
+### Remediation Session 1
+_Not yet started._
