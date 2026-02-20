@@ -4,10 +4,10 @@
 
 ## 🎯 Next Session Starts Here
 <!-- Claude overwrites this section at the end of every session -->
-> **Branding session in progress. CHANGES 1–4 complete.**
+> **Branding session in progress. CHANGES 1–5 complete.**
 >
 > Working through 9 user-requested changes on branch `claude/explore-project-structure-bYDYo`.
-> CHANGES 1–4 done. CHANGES 5–9 pending confirmation and implementation.
+> CHANGES 1–5 done. CHANGES 6–9 pending confirmation and implementation.
 
 ### Change Log (this session)
 - **CHANGE 1 ✅** — Renamed all user-facing "Missive" strings to "Penned" across:
@@ -17,7 +17,10 @@
 - **CHANGE 2 ✅** — Reduced homepage hero whitespace: `min-h-[70vh]` → `min-h-[45vh]`, added `pt-12 pb-8` for tighter vertical framing, `space-y-8` → `space-y-5` between header and buttons, `space-y-3` inside header block.
 - **CHANGE 3 ✅** — Added logout button to `Sidebar.tsx` below Settings. Calls `POST /api/auth/logout` with Bearer token, clears `missive_token` from localStorage, redirects to `/`. Styled as `text-seal/80` (muted red) with `hover:text-seal` to distinguish from nav links.
 - **CHANGE 4 ✅** — Settings link in `Sidebar.tsx`: removed `text-ink-muted` override, added `font-medium`. Now renders in full dark `ink` (#1a1a1a) with medium weight, standing out from other sidebar items.
-- **CHANGE 5** — Pending confirmation
+- **CHANGE 5 ✅** — Draft cards now show recipient, started date, and last-edited date.
+  - `LetterSummary` type extended with `updatedAt`, `recipientUsername`, `addressingInputValue`
+  - `letterToSummary()` in `api/letters/route.ts` populates new fields; DRAFTS query now includes `recipient: { select: { username: true } }`
+  - `drafts/page.tsx` card: shows "To: [username|input|No recipient yet]", "Started [date]", "· Edited [date]" (edited line only shown if updatedAt ≠ createdAt)
 - **CHANGE 6** — Pending confirmation
 - **CHANGE 7** — Pending confirmation
 - **CHANGE 8** — Pending analysis + confirmation

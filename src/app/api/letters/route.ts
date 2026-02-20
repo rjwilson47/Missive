@@ -54,6 +54,9 @@ function letterToSummary(letter: any): LetterSummary {
     deliveredAt: letter.delivered_at?.toISOString() ?? null,
     openedAt: letter.opened_at?.toISOString() ?? null,
     createdAt: letter.created_at?.toISOString() ?? new Date().toISOString(),
+    updatedAt: letter.updated_at?.toISOString() ?? letter.created_at?.toISOString() ?? new Date().toISOString(),
+    recipientUsername: letter.recipient?.username ?? null,
+    addressingInputValue: letter.addressingInputValue ?? null,
   };
 }
 
@@ -73,7 +76,10 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     if (folder === "DRAFTS") {
       const letters = await prisma.letter.findMany({
         where: { senderId: me.id, status: "DRAFT" },
-        include: { sender: { select: { username: true } } },
+        include: {
+          sender: { select: { username: true } },
+          recipient: { select: { username: true } },
+        },
         orderBy: { created_at: "desc" },
       });
       return NextResponse.json(letters.map(letterToSummary));

@@ -64,6 +64,11 @@ export interface LetterSummary {
   deliveredAt: string | null;
   openedAt: string | null;
   createdAt: string;
+  updatedAt: string;
+  /** Resolved recipient username (null if unresolved) */
+  recipientUsername: string | null;
+  /** Raw addressing input value as typed by the sender (null if not set) */
+  addressingInputValue: string | null;
 }
 
 /** Full letter shape used in letter detail views */
